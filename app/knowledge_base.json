@@ -1,0 +1,115 @@
+{
+  "boards": [
+    {
+      "id": "cbse",
+      "name": "CBSE",
+      "type": "National Board",
+      "overview": "Widely followed across India for school education and board examinations in Classes 10 and 12.",
+      "classes": ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Class 9", "Class 10", "Class 11", "Class 12"],
+      "core_focus": ["NCERT textbooks", "concept-based learning", "board exam preparation", "science and mathematics foundation"],
+      "common_streams": ["Science", "Commerce", "Humanities"]
+    },
+    {
+      "id": "icse",
+      "name": "ICSE",
+      "type": "National Board",
+      "overview": "Known for a detailed syllabus, strong English language focus, and balanced academics.",
+      "classes": ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Class 9", "Class 10"],
+      "core_focus": ["English proficiency", "project work", "analytical learning", "broad subject coverage"],
+      "common_streams": ["Science", "Commerce", "Humanities"]
+    },
+    {
+      "id": "state_board",
+      "name": "State Board",
+      "type": "State Board",
+      "overview": "Each state follows its own syllabus, language policy, and examination structure.",
+      "classes": ["Primary", "Upper Primary", "Secondary", "Higher Secondary"],
+      "core_focus": ["local language", "state syllabus", "regional context", "board-specific textbooks"],
+      "common_streams": ["Science", "Commerce", "Arts"]
+    },
+    {
+      "id": "pseb",
+      "name": "PSEB (Punjab)",
+      "type": "State Board",
+      "overview": "Punjab School Education Board follows the state curriculum for school education and board examinations in Punjab.",
+      "classes": ["Primary", "Middle", "Secondary", "Senior Secondary"],
+      "core_focus": ["Punjabi language", "Punjab state syllabus", "board exam preparation", "textbook-based learning"],
+      "common_streams": ["Science", "Commerce", "Arts"]
+    }
+  ],
+  "policies": [
+    {
+      "id": "attendance",
+      "title": "Attendance Requirement",
+      "summary": "Many Indian schools require around 75% attendance for board exam eligibility.",
+      "details": "Students should keep medical documents and school approvals ready when attendance falls below the threshold. Always check the school handbook for board-specific rules."
+    },
+    {
+      "id": "grading",
+      "title": "Assessment Pattern",
+      "summary": "Marks typically come from periodic tests, term exams, practicals, and final board preparation.",
+      "details": "CBSE schools often use competency-based questions and internal assessment. ICSE schools include project work and written exams. State boards may vary by state and class."
+    },
+    {
+      "id": "promotion",
+      "title": "Promotion and Re-examination",
+      "summary": "Promotion rules depend on the school board, class level, and internal assessment performance.",
+      "details": "Students should follow school circulars for supplementary exams, re-evaluation, and subject improvement options."
+    },
+    {
+      "id": "academic_integrity",
+      "title": "Academic Integrity",
+      "summary": "Copying in schoolwork, projects, or board exams can lead to disciplinary action.",
+      "details": "Students should submit original work, cite sources in projects, and follow exam hall rules carefully."
+    }
+  ],
+  "courses": [
+    {
+      "code": "CBSE-10-MATH",
+      "name": "CBSE Class 10 Mathematics",
+      "tags": ["cbse", "math", "class 10", "board exam"],
+      "description": "Algebra, geometry, trigonometry basics, statistics, and real-life problem solving aligned with CBSE Class 10 preparation.",
+      "prerequisites": []
+    },
+    {
+      "code": "CBSE-12-PHYS",
+      "name": "CBSE Class 12 Physics",
+      "tags": ["cbse", "science", "class 12", "board exam"],
+      "description": "Mechanics, electricity, optics, modern physics, and practical-based preparation for board exams.",
+      "prerequisites": ["CBSE-10-MATH"]
+    },
+    {
+      "code": "ICSE-10-ENG",
+      "name": "ICSE Class 10 English",
+      "tags": ["icse", "english", "class 10", "writing"],
+      "description": "Grammar, literature, writing skills, comprehension, and language development for ICSE board study.",
+      "prerequisites": []
+    },
+    {
+      "code": "STATE-BOARD-SCI",
+      "name": "State Board Science Foundation",
+      "tags": ["state board", "science", "class 9", "class 10"],
+      "description": "Foundational science topics aligned to state board textbooks and exam preparation.",
+      "prerequisites": []
+    }
+  ]
+  ,
+  "punjab_resources": [
+    {
+      "district": "Ludhiana",
+      "tips": "Strong coaching and tutoring presence; focus on weekly tests, practical lab practice, and consult local CBSE/PSEB past papers. Public libraries in the city have good reference material."
+    },
+    {
+      "district": "Amritsar",
+      "tips": "Emphasise language and literature practice along with science foundation. Check for regional revision workshops before boards and plan travel to exam centres early."
+    },
+    {
+      "district": "Jalandhar",
+      "tips": "Known for competitive academic coaching; join local study groups for difficult chapters and prioritise sample paper practice under timed conditions."
+    },
+    {
+      "district": "Patiala",
+      "tips": "Access to several senior teachers and study circles. Maintain attendance documentation and reach out to school for supplementary materials if needed."
+    }
+  ]
+}
