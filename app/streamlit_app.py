@@ -254,55 +254,116 @@ def _latest_assistant_response(messages):
     return ""
 
 
+def _pair_messages(messages):
+    pairs = []
+    pending_user = None
+    for idx, message in enumerate(messages[1:], start=1):
+        role = message.get("role")
+        if role == "user":
+            pending_user = {"index": idx, "content": message.get("content", "")}
+        elif role == "assistant" and pending_user is not None:
+            pairs.append(
+                {
+                    "user_index": pending_user["index"],
+                    "user_content": pending_user["content"],
+                    "assistant_index": idx,
+                    "assistant_content": message.get("content", ""),
+                }
+            )
+            pending_user = None
+    if pending_user is not None:
+        pairs.append(
+            {
+                "user_index": pending_user["index"],
+                "user_content": pending_user["content"],
+                "assistant_index": None,
+                "assistant_content": "",
+            }
+        )
+    return pairs
+
+
+def _generate_assistant_reply(client, saved_student_profile, academic_year, prompt_text, context_messages):
+    system_message = {"role": "system", "content": _build_system_message(saved_student_profile, academic_year)}
+    return client.send_message([system_message, *context_messages, {"role": "user", "content": prompt_text}])
+
+
+def _format_download_name(format_choice: str):
+    safe = format_choice.lower().replace(" ", "_")
+    return f"ai_response.{ 'txt' if safe == 'text' else 'png' if safe == 'png' else 'pdf' }"
+
+
 def _reset_conversation():
     st.session_state.messages = [{"role": "system", "content": _advisor_persona()}]
 
 
-def _render_chat_tools(saved_student_profile, academic_year, client):
-    st.markdown("---")
-    st.subheader("Chat tools")
-    tool_left, tool_right = st.columns([1, 1])
+def _render_prompt_history_editor(saved_student_profile, academic_year, client):
+    pairs = _pair_messages(st.session_state.messages)
+    if not pairs:
+        return
 
-    with tool_left:
-        if st.button("Reset conversation", type="secondary"):
-            _reset_conversation()
-            st.success("Conversation cleared.")
+    st.markdown("---")
+    st.subheader("Edit and resubmit previous prompts")
+    st.caption("Select any earlier prompt, change it, choose a response format, and regenerate it in place.")
+
+    selectable_pairs = [pair for pair in pairs if pair.get("user_content")]
+    selected_pair = st.selectbox(
+        "Choose a previous prompt",
+        selectable_pairs,
+        format_func=lambda item: item["user_content"][:90] + ("..." if len(item["user_content"]) > 90 else ""),
+        key="prompt_history_selector",
+    )
+
+    edited_prompt = st.text_area("Edit selected prompt", value=selected_pair["user_content"], height=120, key=f"edited_prompt_{selected_pair['user_index']}")
+    resend_format = st.radio(
+        "Resubmitted response format",
+        ["Text", "PNG", "PDF"],
+        horizontal=True,
+        key=f"resubmit_format_{selected_pair['user_index']}",
+    )
+
+    action_left, action_right = st.columns([1, 1])
+    with action_left:
+        if st.button("Resubmit edited prompt", key=f"resubmit_prompt_{selected_pair['user_index']}"):
+            if not edited_prompt.strip():
+                st.warning("Please enter a prompt before resubmitting.")
+                return
+
+            user_index = selected_pair["user_index"]
+            assistant_index = selected_pair.get("assistant_index")
+            current_history = st.session_state.messages[1:user_index]
+
+            reply = _generate_assistant_reply(client, saved_student_profile, academic_year, edited_prompt.strip(), current_history)
+            st.session_state.messages[user_index]["content"] = edited_prompt.strip()
+            if assistant_index is not None and assistant_index < len(st.session_state.messages):
+                st.session_state.messages[assistant_index]["content"] = reply
+            else:
+                st.session_state.messages.append({"role": "assistant", "content": reply})
+
+            if resend_format == "Text":
+                st.session_state.latest_export_bytes = reply.encode("utf-8")
+                st.session_state.latest_export_format = "text"
+                st.session_state.latest_export_name = "ai_response.txt"
+            elif resend_format == "PNG":
+                st.session_state.latest_export_bytes = generate_png_bytes(reply)
+                st.session_state.latest_export_format = "png"
+                st.session_state.latest_export_name = "ai_response.png"
+            else:
+                st.session_state.latest_export_bytes = generate_pdf_bytes(reply)
+                st.session_state.latest_export_format = "pdf"
+                st.session_state.latest_export_name = "ai_response.pdf"
+
+            st.success("Prompt updated and resubmitted.")
             st.rerun()
 
-    with tool_right:
-        latest_ai_response = _latest_assistant_response(st.session_state.messages)
-        if latest_ai_response:
-            latest_png = generate_png_bytes(latest_ai_response)
-            latest_pdf = generate_pdf_bytes(latest_ai_response)
-            if latest_png:
-                st.download_button("Download latest AI response PNG", data=latest_png, file_name="ai_response.png", mime="image/png")
-            if latest_pdf:
-                st.download_button("Download latest AI response PDF", data=latest_pdf, file_name="ai_response.pdf", mime="application/pdf")
-
-    assistant_entries = _assistant_message_entries(st.session_state.messages)
-    if assistant_entries:
-        st.markdown("#### Edit previous AI response")
-        chosen_entry = st.selectbox("Choose a response to edit", assistant_entries, format_func=lambda item: item["label"], key="chosen_ai_entry")
-        edited_response = st.text_area("Edit AI response", value=chosen_entry["content"], height=220, key=f"edit_ai_response_{chosen_entry['index']}")
-        edit_save_col, edit_regen_col = st.columns([1, 1])
-        with edit_save_col:
-            if st.button("Save edited response", key="save_edited_response"):
-                st.session_state.messages[chosen_entry["index"]]["content"] = edited_response.strip()
-                st.success("AI response updated.")
-                st.rerun()
-        with edit_regen_col:
-            if st.button("Regenerate from this user prompt", key="regen_from_selected"):
-                selected_index = chosen_entry["index"]
-                previous_messages = st.session_state.messages[:selected_index]
-                if previous_messages and previous_messages[-1].get("role") == "assistant":
-                    previous_messages = previous_messages[:-1]
-                reply = client.send_message([
-                    {"role": "system", "content": _build_system_message(saved_student_profile, academic_year)},
-                    *previous_messages[1:],
-                ])
-                st.session_state.messages[selected_index]["content"] = reply
-                st.success("AI response regenerated from the selected prompt.")
-                st.rerun()
+    with action_right:
+        if st.button("Reset conversation", type="secondary", key=f"reset_from_history_{selected_pair['user_index']}"):
+            _reset_conversation()
+            st.session_state.latest_export_bytes = None
+            st.session_state.latest_export_format = None
+            st.session_state.latest_export_name = None
+            st.success("Conversation cleared.")
+            st.rerun()
 
 
 def generate_png_bytes(text: str, width: int = 1200, padding: int = 20) -> Optional[bytes]:
@@ -360,6 +421,15 @@ if "student_profile_saved" not in st.session_state:
 
 if "student_profile_draft" not in st.session_state:
     st.session_state.student_profile_draft = dict(st.session_state.student_profile_saved)
+
+if "latest_export_bytes" not in st.session_state:
+    st.session_state.latest_export_bytes = None
+
+if "latest_export_format" not in st.session_state:
+    st.session_state.latest_export_format = None
+
+if "latest_export_name" not in st.session_state:
+    st.session_state.latest_export_name = None
 
 for field, default in {
     "board": st.session_state.student_profile_draft.get("board", "Auto"),
@@ -446,7 +516,48 @@ if page == "Chat":
     st.success(f"Active academic year: {academic_year}")
     st.caption(f"Active saved profile: {_profile_summary(saved_student_profile)}")
 
-    st.caption("Edit previous AI responses below and download the latest one as PNG or PDF.")
+    st.caption("Choose the output type before submitting so the assistant generates text, PNG, or PDF directly.")
+
+    with st.form("prompt_composer_form", clear_on_submit=True):
+        prompt_text = st.text_area("Enter your prompt", placeholder="Ask for study plans, admission help, exam tips, and more...", height=120)
+        response_format = st.radio(
+            "Response format",
+            ["Text", "PNG", "PDF"],
+            horizontal=True,
+            help="Text shows the answer in chat, PNG creates an image-style response, and PDF creates a document-style response.",
+        )
+        composer_col_left, composer_col_right = st.columns([1, 1])
+        with composer_col_left:
+            send_prompt = st.form_submit_button("Generate response")
+        with composer_col_right:
+            st.caption("You can edit and resubmit earlier prompts below.")
+
+    if send_prompt and prompt_text.strip():
+        st.session_state.messages.append({"role": "user", "content": prompt_text.strip()})
+        with st.spinner("Generating response..."):
+            reply = _generate_assistant_reply(client, saved_student_profile, academic_year, prompt_text.strip(), st.session_state.messages[1:-1])
+        if response_format == "Text":
+            st.session_state.messages.append({"role": "assistant", "content": reply})
+            st.session_state.latest_export_bytes = None
+            st.session_state.latest_export_format = "text"
+            st.session_state.latest_export_name = "ai_response.txt"
+        elif response_format == "PNG":
+            png_bytes = generate_png_bytes(reply)
+            st.session_state.messages.append({"role": "assistant", "content": reply})
+            st.session_state.latest_export_bytes = png_bytes
+            st.session_state.latest_export_format = "png"
+            st.session_state.latest_export_name = _format_download_name("PNG")
+        else:
+            pdf_bytes = generate_pdf_bytes(reply)
+            st.session_state.messages.append({"role": "assistant", "content": reply})
+            st.session_state.latest_export_bytes = pdf_bytes
+            st.session_state.latest_export_format = "pdf"
+            st.session_state.latest_export_name = _format_download_name("PDF")
+
+        s = sentiment.analyze_sentiment(prompt_text.strip())
+        analytics_module.log_interaction(user="anonymous", role="user", message=prompt_text.strip(), sentiment_label=s["label"], compound=s["compound"])
+        analytics_module.log_interaction(user="anonymous", role="assistant", message=reply, sentiment_label="", compound=0.0)
+        st.rerun()
 
     with st.expander("Quick starter questions", expanded=True):
         cols = st.columns(3)
@@ -466,26 +577,26 @@ if page == "Chat":
                     analytics_module.log_interaction(user="anonymous", role="assistant", message=reply, sentiment_label="", compound=0.0)
                     st.rerun()
 
-    if user_input := st.chat_input("Ask the advisor..."):
-        st.session_state.messages.append({"role": "user", "content": user_input})
-        with st.spinner("Thinking..."):
-            reply = client.send_message([
-                {"role": "system", "content": _build_system_message(saved_student_profile, academic_year)},
-                *st.session_state.messages[1:],
-            ])
-        st.session_state.messages.append({"role": "assistant", "content": reply})
-        # sentiment and logging
-        s = sentiment.analyze_sentiment(user_input)
-        analytics_module.log_interaction(user="anonymous", role="user", message=user_input, sentiment_label=s["label"], compound=s["compound"])
-        analytics_module.log_interaction(user="anonymous", role="assistant", message=reply, sentiment_label="", compound=0.0)
-
     for msg in st.session_state.messages[1:]:
         if msg["role"] == "user":
             st.chat_message("user").write(msg["content"])
         elif msg["role"] == "assistant":
             st.chat_message("assistant").write(msg["content"])
 
-    _render_chat_tools(saved_student_profile, academic_year, client)
+    if getattr(st.session_state, "latest_export_bytes", None):
+        st.markdown("---")
+        st.subheader("Latest generated file")
+        export_name = st.session_state.get("latest_export_name", "ai_response.txt")
+        export_format = st.session_state.get("latest_export_format", "text")
+        if export_format == "png":
+            st.image(st.session_state.latest_export_bytes)
+            st.download_button("Download PNG", data=st.session_state.latest_export_bytes, file_name=export_name, mime="image/png")
+        elif export_format == "pdf":
+            st.download_button("Download PDF", data=st.session_state.latest_export_bytes, file_name=export_name, mime="application/pdf")
+        else:
+            st.download_button("Download text", data=st.session_state.latest_export_bytes, file_name=export_name, mime="text/plain")
+
+    _render_prompt_history_editor(saved_student_profile, academic_year, client)
 
     st.markdown("---")
     st.markdown("**Tip:** Keep your board and class updated for sharper advice.")
