@@ -1,6 +1,16 @@
 import os
+import sys
 from datetime import date
+import pathlib
 import streamlit as st
+
+# Ensure repository root is on sys.path so `from app import ...` works
+# When Streamlit runs `app/streamlit_app.py` directly, sys.path[0] is the `app/`
+# directory which prevents Python from finding the top-level `app` package.
+repo_root = pathlib.Path(__file__).resolve().parents[1]
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
+
 from app.api_client import AIClient
 from app import recommender, appointments, sentiment, analytics_module
 import json
