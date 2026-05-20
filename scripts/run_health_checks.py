@@ -1,5 +1,6 @@
 import os
 import json
+from pathlib import Path
 from app.api_client import AIClient
 
 
@@ -23,6 +24,9 @@ def main():
         except Exception as e:
             results[name] = {"ok": False, "reason": "exception", "detail": str(e)}
 
+    # write results to a file for CI consumption
+    out_path = Path.cwd() / "health_results.json"
+    out_path.write_text(json.dumps(results, indent=2), encoding='utf-8')
     print(json.dumps(results, indent=2))
 
     # Exit code: 0 always for scheduled runs to avoid failing unrelated CI.

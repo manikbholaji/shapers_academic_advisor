@@ -189,6 +189,46 @@ def _profile_from_keys(prefix: str):
     }
 
 
+def _sync_profile_draft_to_saved():
+    st.session_state.student_profile_draft = _profile_from_keys("profile_draft")
+    st.session_state.student_profile_saved = dict(st.session_state.student_profile_draft)
+
+
+def _render_profile_form():
+    choices = _student_profile_choices()
+    with st.form("student_profile_form", clear_on_submit=False):
+        st.selectbox("Board", choices["board"], index=choices["board"].index(st.session_state.get("profile_draft_board", "Auto")), key="profile_draft_board")
+        st.selectbox("Class", choices["class_level"], index=choices["class_level"].index(st.session_state.get("profile_draft_class_level", "Auto")), key="profile_draft_class_level")
+        st.selectbox("Preferred medium", choices["medium"], index=choices["medium"].index(st.session_state.get("profile_draft_medium", "Auto")), key="profile_draft_medium")
+        st.selectbox("Primary goal", choices["goal"], index=choices["goal"].index(st.session_state.get("profile_draft_goal", "Board exam prep")), key="profile_draft_goal")
+        st.text_input("City / district (optional)", value=st.session_state.get("profile_draft_city", ""), key="profile_draft_city")
+        save_profile = st.form_submit_button("Save profile")
+
+    st.session_state.student_profile_draft = _profile_from_keys("profile_draft")
+    if save_profile:
+        _sync_profile_draft_to_saved()
+        st.success("Student profile saved. Chat responses will now use this profile.")
+        st.rerun()
+
+    st.caption("Saved profile")
+    st.caption(_profile_summary(st.session_state.student_profile_saved))
+    if st.session_state.student_profile_draft != st.session_state.student_profile_saved:
+        draft_profile = st.session_state.student_profile_draft
+        unsaved_bits = []
+        for label, key in [
+            ("Board", "board"),
+            ("Class", "class_level"),
+            ("Medium", "medium"),
+            ("Goal", "goal"),
+            ("City", "city"),
+        ]:
+            if draft_profile.get(key) != st.session_state.student_profile_saved.get(key):
+                unsaved_bits.append(f"{label}: {draft_profile.get(key) or '—'}")
+        if unsaved_bits:
+            st.warning("Unsaved changes: " + " | ".join(unsaved_bits))
+
+
+
 def _assistant_message_entries(messages):
     entries = []
     assistant_number = 0
@@ -212,6 +252,57 @@ def _latest_assistant_response(messages):
         if message.get("role") == "assistant":
             return message.get("content", "")
     return ""
+
+
+def _reset_conversation():
+    st.session_state.messages = [{"role": "system", "content": _advisor_persona()}]
+
+
+def _render_chat_tools(saved_student_profile, academic_year, client):
+    st.markdown("---")
+    st.subheader("Chat tools")
+    tool_left, tool_right = st.columns([1, 1])
+
+    with tool_left:
+        if st.button("Reset conversation", type="secondary"):
+            _reset_conversation()
+            st.success("Conversation cleared.")
+            st.rerun()
+
+    with tool_right:
+        latest_ai_response = _latest_assistant_response(st.session_state.messages)
+        if latest_ai_response:
+            latest_png = generate_png_bytes(latest_ai_response)
+            latest_pdf = generate_pdf_bytes(latest_ai_response)
+            if latest_png:
+                st.download_button("Download latest AI response PNG", data=latest_png, file_name="ai_response.png", mime="image/png")
+            if latest_pdf:
+                st.download_button("Download latest AI response PDF", data=latest_pdf, file_name="ai_response.pdf", mime="application/pdf")
+
+    assistant_entries = _assistant_message_entries(st.session_state.messages)
+    if assistant_entries:
+        st.markdown("#### Edit previous AI response")
+        chosen_entry = st.selectbox("Choose a response to edit", assistant_entries, format_func=lambda item: item["label"], key="chosen_ai_entry")
+        edited_response = st.text_area("Edit AI response", value=chosen_entry["content"], height=220, key=f"edit_ai_response_{chosen_entry['index']}")
+        edit_save_col, edit_regen_col = st.columns([1, 1])
+        with edit_save_col:
+            if st.button("Save edited response", key="save_edited_response"):
+                st.session_state.messages[chosen_entry["index"]]["content"] = edited_response.strip()
+                st.success("AI response updated.")
+                st.rerun()
+        with edit_regen_col:
+            if st.button("Regenerate from this user prompt", key="regen_from_selected"):
+                selected_index = chosen_entry["index"]
+                previous_messages = st.session_state.messages[:selected_index]
+                if previous_messages and previous_messages[-1].get("role") == "assistant":
+                    previous_messages = previous_messages[:-1]
+                reply = client.send_message([
+                    {"role": "system", "content": _build_system_message(saved_student_profile, academic_year)},
+                    *previous_messages[1:],
+                ])
+                st.session_state.messages[selected_index]["content"] = reply
+                st.success("AI response regenerated from the selected prompt.")
+                st.rerun()
 
 
 def generate_png_bytes(text: str, width: int = 1200, padding: int = 20) -> Optional[bytes]:
@@ -279,9 +370,6 @@ for field, default in {
 }.items():
     st.session_state.setdefault(f"profile_draft_{field}", default)
 
-if "chat_reset_requested" not in st.session_state:
-    st.session_state.chat_reset_requested = False
-
 PROJECT_PAGES = ["Chat", "Demo", "Knowledge Base", "Book Appointment", "Analytics", "Admin"]
 
 with st.sidebar:
@@ -302,24 +390,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.header("Student profile")
-    with st.form("student_profile_form", clear_on_submit=False):
-        st.selectbox("Board", _student_profile_choices()["board"], index=_student_profile_choices()["board"].index(st.session_state.get("profile_draft_board", "Auto")), key="profile_draft_board")
-        st.selectbox("Class", _student_profile_choices()["class_level"], index=_student_profile_choices()["class_level"].index(st.session_state.get("profile_draft_class_level", "Auto")), key="profile_draft_class_level")
-        st.selectbox("Preferred medium", _student_profile_choices()["medium"], index=_student_profile_choices()["medium"].index(st.session_state.get("profile_draft_medium", "Auto")), key="profile_draft_medium")
-        st.selectbox("Primary goal", _student_profile_choices()["goal"], index=_student_profile_choices()["goal"].index(st.session_state.get("profile_draft_goal", "Board exam prep")), key="profile_draft_goal")
-        st.text_input("City / district (optional)", value=st.session_state.get("profile_draft_city", ""), key="profile_draft_city")
-        save_profile = st.form_submit_button("Save profile")
-
-    st.session_state.student_profile_draft = _profile_from_keys("profile_draft")
-    if save_profile:
-        st.session_state.student_profile_saved = dict(st.session_state.student_profile_draft)
-        st.success("Student profile saved. Chat responses will now use this profile.")
-        st.rerun()
-
-    st.caption("Saved profile")
-    st.caption(_profile_summary(st.session_state.student_profile_saved))
-    if st.session_state.student_profile_draft != st.session_state.student_profile_saved:
-        st.warning("You have unsaved profile changes. Click Save profile to apply them to the chatbot.")
+    _render_profile_form()
 
     manual_values = {
         "openai_api_key": None,
@@ -375,15 +446,7 @@ if page == "Chat":
     st.success(f"Active academic year: {academic_year}")
     st.caption(f"Active saved profile: {_profile_summary(saved_student_profile)}")
 
-    chat_top_left, chat_top_right = st.columns([1, 2])
-    with chat_top_left:
-        if st.button("Reset conversation", type="secondary"):
-            st.session_state.messages = [{"role": "system", "content": _advisor_persona()}]
-            st.session_state.chat_reset_requested = True
-            st.success("Conversation cleared.")
-            st.rerun()
-    with chat_top_right:
-        st.caption("Edit previous AI responses below and download the latest one as PNG or PDF.")
+    st.caption("Edit previous AI responses below and download the latest one as PNG or PDF.")
 
     with st.expander("Quick starter questions", expanded=True):
         cols = st.columns(3)
@@ -422,28 +485,7 @@ if page == "Chat":
         elif msg["role"] == "assistant":
             st.chat_message("assistant").write(msg["content"])
 
-    assistant_entries = _assistant_message_entries(st.session_state.messages)
-    if assistant_entries:
-        st.markdown("---")
-        st.subheader("Edit previous AI response")
-        chosen_entry = st.selectbox("Choose a response to edit", assistant_entries, format_func=lambda item: item["label"], key="chosen_ai_entry")
-        edited_response = st.text_area("Edit AI response", value=chosen_entry["content"], height=220, key=f"edit_ai_response_{chosen_entry['index']}")
-        edit_save_col, edit_download_col = st.columns([1, 1])
-        with edit_save_col:
-            if st.button("Save edited response", key="save_edited_response"):
-                st.session_state.messages[chosen_entry["index"]]["content"] = edited_response.strip()
-                st.success("AI response updated.")
-                st.rerun()
-        latest_ai_response = _latest_assistant_response(st.session_state.messages)
-        with edit_download_col:
-            st.caption("Download the latest AI response")
-            if latest_ai_response:
-                latest_png = generate_png_bytes(latest_ai_response)
-                latest_pdf = generate_pdf_bytes(latest_ai_response)
-                if latest_png:
-                    st.download_button("Download latest AI response PNG", data=latest_png, file_name="ai_response.png", mime="image/png")
-                if latest_pdf:
-                    st.download_button("Download latest AI response PDF", data=latest_pdf, file_name="ai_response.pdf", mime="application/pdf")
+    _render_chat_tools(saved_student_profile, academic_year, client)
 
     st.markdown("---")
     st.markdown("**Tip:** Keep your board and class updated for sharper advice.")
