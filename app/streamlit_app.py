@@ -516,21 +516,21 @@ if page == "Chat":
     st.success(f"Active academic year: {academic_year}")
     st.caption(f"Active saved profile: {_profile_summary(saved_student_profile)}")
 
-    st.caption("Choose the output type before submitting so the assistant generates text, PNG, or PDF directly.")
+    st.caption("Choose how you want the answer delivered before you submit the prompt.")
 
     with st.form("prompt_composer_form", clear_on_submit=True):
-        prompt_text = st.text_area("Enter your prompt", placeholder="Ask for study plans, admission help, exam tips, and more...", height=120)
+        prompt_text = st.text_area("Ask anything", placeholder="Ask for study plans, admission help, exam tips, and more...", height=120)
         response_format = st.radio(
-            "Response format",
+            "Reply format",
             ["Text", "PNG", "PDF"],
             horizontal=True,
-            help="Text shows the answer in chat, PNG creates an image-style response, and PDF creates a document-style response.",
+            help="Choose Text for a chat reply, PNG for an image-style response, or PDF for a document-style response.",
         )
         composer_col_left, composer_col_right = st.columns([1, 1])
         with composer_col_left:
-            send_prompt = st.form_submit_button("Generate response")
+            send_prompt = st.form_submit_button("Generate reply")
         with composer_col_right:
-            st.caption("You can edit and resubmit earlier prompts below.")
+            st.caption("You can revise and resubmit earlier prompts below.")
 
     if send_prompt and prompt_text.strip():
         st.session_state.messages.append({"role": "user", "content": prompt_text.strip()})
@@ -634,7 +634,7 @@ elif page == "Knowledge Base":
 
 elif page == "Demo":
     st.header("Demo: Sample Prompts & Expected Answers")
-    st.caption("Quick examples to try — tailored for Punjab students (PSEB/Punjab, CBSE, ICSE). Use the 'Use in Chat' button to run the prompt in the Chat page.")
+    st.caption("Quick examples to try — tailored for Punjab students (PSEB/Punjab, CBSE, ICSE). Use the button in each card to open the prompt in Chat.")
 
     academic_year = _current_academic_year()
 
