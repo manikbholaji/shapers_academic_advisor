@@ -1,18 +1,16 @@
 import os
-import sys
 from datetime import date
-import pathlib
+from pathlib import Path
 import streamlit as st
 
-# Ensure repository root is on sys.path so `from app import ...` works
-# When Streamlit runs `app/streamlit_app.py` directly, sys.path[0] is the `app/`
-# directory which prevents Python from finding the top-level `app` package.
-repo_root = pathlib.Path(__file__).resolve().parents[1]
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
-
-from app.api_client import AIClient
-from app import recommender, appointments, sentiment, analytics_module
+# Streamlit runs this file from the `app/` directory, so sibling modules are
+# importable directly by filename. Using local imports avoids relying on the
+# repository root being present on sys.path in every environment.
+from api_client import AIClient
+import recommender
+import appointments
+import sentiment
+import analytics_module
 import json
 import io
 from typing import Optional
@@ -383,12 +381,12 @@ elif page == "Demo":
     cols = st.columns(1)
     lang = st.selectbox("Language / ਭਾਸ਼ਾ / भाषा", ["English", "हिन्दी", "Hinglish", "ਪੰਜਾਬੀ"], index=0)
     asset_map = {
-        "English": "app/demo_assets/cheatsheet_en.md",
-        "हिन्दी": "app/demo_assets/cheatsheet_hi.md",
-        "Hinglish": "app/demo_assets/cheatsheet_hinglish.md",
-        "ਪੰਜਾਬੀ": "app/demo_assets/cheatsheet_pa.md",
+        "English": "cheatsheet_en.md",
+        "हिन्दी": "cheatsheet_hi.md",
+        "Hinglish": "cheatsheet_hinglish.md",
+        "ਪੰਜਾਬੀ": "cheatsheet_pa.md",
     }
-    asset_path = asset_map.get(lang)
+    asset_path = Path(__file__).resolve().parent / "demo_assets" / asset_map.get(lang, "cheatsheet_en.md")
     try:
         with open(asset_path, 'r', encoding='utf-8') as f:
             cheatsheet_text = f.read()
