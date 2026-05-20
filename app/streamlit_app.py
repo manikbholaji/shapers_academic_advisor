@@ -23,13 +23,18 @@ st.caption("An experienced, friendly academic guide for CBSE, ICSE, and Punjab b
 def _load_secrets():
     try:
         return {
-            "OPENAI_API_KEY": st.secrets.get("OPENAI_API_KEY", None),
-            "GOOGLE_API_KEY": st.secrets.get("GOOGLE_API_KEY", None),
-            "DIALOGFLOW_PROJECT_ID": st.secrets.get("DIALOGFLOW_PROJECT_ID", None),
-            "DIALOGFLOW_ACCESS_TOKEN": st.secrets.get("DIALOGFLOW_ACCESS_TOKEN", None),
+            "OPENAI_API_KEY": st.secrets.get("OPENAI_API_KEY", None) or os.environ.get("OPENAI_API_KEY"),
+            "GOOGLE_API_KEY": st.secrets.get("GOOGLE_API_KEY", None) or os.environ.get("GOOGLE_API_KEY"),
+            "DIALOGFLOW_PROJECT_ID": st.secrets.get("DIALOGFLOW_PROJECT_ID", None) or os.environ.get("DIALOGFLOW_PROJECT_ID"),
+            "DIALOGFLOW_ACCESS_TOKEN": st.secrets.get("DIALOGFLOW_ACCESS_TOKEN", None) or os.environ.get("DIALOGFLOW_ACCESS_TOKEN"),
         }
     except Exception:
-        return {}
+        return {
+            "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY"),
+            "GOOGLE_API_KEY": os.environ.get("GOOGLE_API_KEY"),
+            "DIALOGFLOW_PROJECT_ID": os.environ.get("DIALOGFLOW_PROJECT_ID"),
+            "DIALOGFLOW_ACCESS_TOKEN": os.environ.get("DIALOGFLOW_ACCESS_TOKEN"),
+        }
 
 
 def _resolve_provider(choice, secrets):
@@ -68,6 +73,20 @@ def _setup_status(provider, secrets):
     if provider == "Dialogflow" and secrets.get("DIALOGFLOW_ACCESS_TOKEN"):
         return "Using your saved Dialogflow credentials."
     return "Add a key in Secrets or use the manual fields below."
+
+
+def _backend_source(provider, secrets, manual_values):
+    key_sources = {
+        "OpenAI": ("OPENAI_API_KEY", "openai_api_key"),
+        "Google": ("GOOGLE_API_KEY", "google_api_key"),
+        "Dialogflow": ("DIALOGFLOW_ACCESS_TOKEN", "dialogflow_access_token"),
+    }
+    secret_key, manual_key = key_sources.get(provider, (None, None))
+    if secret_key and secrets.get(secret_key):
+        return "secret"
+    if manual_key and manual_values.get(manual_key):
+        return "manual"
+    return "none"
 
 
 def _advisor_persona():
@@ -255,6 +274,17 @@ with st.sidebar:
 
     key_to_use = _provider_key(provider, secrets, manual_values)
     client = AIClient(provider=provider, api_key=key_to_use, model=model)
+    backend_source = _backend_source(provider, secrets, manual_values)
+
+    if backend_source == "none" or provider == "Mock":
+        st.sidebar.warning("Active backend: Mock (no API key configured)")
+    elif backend_source == "secret":
+        st.sidebar.success(f"Active backend: {provider} using Streamlit secret")
+    else:
+        st.sidebar.info(f"Active backend: {provider} using manual key")
+
+    if provider != "Mock":
+        st.sidebar.caption(_setup_status(provider, secrets))
 
     if provider == "Dialogflow":
         dialogflow_project_id = secrets.get("DIALOGFLOW_PROJECT_ID") or manual_values.get("dialogflow_project_id")
