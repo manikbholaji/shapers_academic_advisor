@@ -7,7 +7,8 @@ SHAPERS Academic Advisor is a Streamlit app for Punjab students that provides bo
 - Punjab-focused academic advisor experience for CBSE, ICSE, PSEB, and State Board students.
 - Provider-agnostic AI backend with OpenAI, Google Gemini, Dialogflow, and offline Mock mode.
 - Saved student profile workflow with a required **Save profile** action before advice updates.
-- Chat tools to edit previous AI responses, reset the conversation, and download replies as PNG or PDF.
+- Gemini-style prompt composer that lets you choose the output format before submission: Text, PNG, or PDF.
+- Prompt history editor so you can revise a previous prompt and resubmit it without creating a new conversation.
 - Demo page with multilingual sample prompts and downloadable cheat-sheets in English, Hindi, Hinglish, and Punjabi.
 - Knowledge Base, appointment booking, analytics, and admin utilities.
 
@@ -33,16 +34,16 @@ To enable real API usage in Streamlit Community Cloud:
 
 If no secret is set, the app intentionally falls back to Mock mode so the UI still works.
 
-   ### Secret reference
+### Secret reference
 
-   | Secret | Purpose |
-   | --- | --- |
-   | `OPENAI_API_KEY` | Enables OpenAI-backed responses |
-   | `GOOGLE_API_KEY` | Enables Google Gemini-backed responses |
-   | `DIALOGFLOW_PROJECT_ID` | Required for Dialogflow runtime calls |
-   | `DIALOGFLOW_ACCESS_TOKEN` | Required for Dialogflow runtime calls |
+| Secret | Purpose |
+| --- | --- |
+| `OPENAI_API_KEY` | Enables OpenAI-backed responses |
+| `GOOGLE_API_KEY` | Enables Google Gemini-backed responses |
+| `DIALOGFLOW_PROJECT_ID` | Required for Dialogflow runtime calls |
+| `DIALOGFLOW_ACCESS_TOKEN` | Required for Dialogflow runtime calls |
 
-   If multiple secrets are present, the app follows the selected provider in the sidebar. When **Auto (recommended)** is selected, it prefers OpenAI, then Google, then Mock mode.
+If multiple secrets are present, the app follows the selected provider in the sidebar. When **Auto (recommended)** is selected, it prefers OpenAI, then Google, then Mock mode.
 
 ## Local setup
 
@@ -64,9 +65,9 @@ streamlit run app/streamlit_app.py
 
 ### Chat tools
 
+- Choose a response format before sending a prompt: **Text**, **PNG**, or **PDF**.
+- Use the prompt history editor to revise an earlier prompt and resubmit it in place.
 - **Reset conversation** clears the current chat and starts fresh.
-- **Edit previous AI response** lets you revise a previous assistant reply.
-- **Download latest AI response** exports the latest answer as PNG or PDF.
 
 ### Demo page
 
@@ -98,6 +99,7 @@ python -m pytest -q
 2. Set the app entry point to `app/streamlit_app.py`.
 3. Add the required secrets in the Streamlit UI.
 4. Redeploy and verify the sidebar backend banner.
+5. Confirm the composer shows the selected response type and that the saved student profile is active after clicking **Save profile**.
 
 ## Health checks and notifications
 

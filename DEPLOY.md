@@ -21,18 +21,42 @@ git push -u origin main
 ## 2) Add Streamlit secrets
 
 - On Streamlit Community Cloud (https://streamlit.io/cloud), create a new app and link your GitHub repo.
-- In the app settings → Secrets, add your `OPENAI_API_KEY` (if using OpenAI). Do NOT commit API keys in the repo.
+- In the app settings → Secrets, add the secret for the provider you want to use. Do NOT commit API keys in the repo.
 
-Example secret name:
-- `OPENAI_API_KEY` = sk-***
+Use one of these blocks:
+
+OpenAI:
+
+```toml
+OPENAI_API_KEY = "sk-your-real-openai-key-here"
+```
+
+Google Gemini:
+
+```toml
+GOOGLE_API_KEY = "your-real-google-api-key-here"
+```
+
+Dialogflow:
+
+```toml
+DIALOGFLOW_PROJECT_ID = "your-dialogflow-project-id"
+DIALOGFLOW_ACCESS_TOKEN = "your-dialogflow-access-token"
+```
 
 ## 3) Configure the app entrypoint
 
 Streamlit will run `app/streamlit_app.py` by default. If needed, set the `Main file` in Streamlit settings to `app/streamlit_app.py`.
 
+The deployed app now has a Gemini-style composer flow:
+
+- Students choose **Text**, **PNG**, or **PDF** before generating a response.
+- Students can edit and resubmit earlier prompts from prompt history.
+- The sidebar profile editor requires **Save profile** before the chatbot uses updated student details.
+
 ## 4) Runtime & dependencies
 
-Streamlit installs packages from `requirements.txt`. Ensure it contains `streamlit`, `openai`, `vaderSentiment`, `pandas`, and `plotly`.
+Streamlit installs packages from `requirements.txt`. Ensure it contains `streamlit`, `openai`, `google-auth`, `requests`, `Pillow`, `reportlab`, `vaderSentiment`, `pandas`, and `plotly`.
 
 ## 5) Optional: GitHub Actions for CI
 
@@ -40,6 +64,7 @@ A basic `python-app.yml` is included under `.github/workflows/` to install depen
 
 ## 6) Debugging deployment issues
 
+- If the sidebar says **Mock mode**, the app is working but no provider secret is configured yet.
 - If app fails to start, check the `Logs` panel in Streamlit Cloud for errors.
 - Common issues: missing secrets, package install errors, or an incorrect main file path.
 
@@ -52,5 +77,12 @@ pip install -r requirements.txt
 python -m tests.conversational_tests
 streamlit run app/streamlit_app.py
 ```
+
+## 8) Verify the prompt composer flow
+
+- Open the Chat page.
+- Enter a prompt, pick **Text**, **PNG**, or **PDF**, and submit.
+- Use the prompt history section to edit an earlier prompt and resubmit it in place.
+- Save the student profile before testing board/class-aware responses.
 
 If you want I can prepare the `git` commands and create the GitHub repo skeleton for you; you'll need to push the code from your computer or provide a GitHub token to create the repo from here.
