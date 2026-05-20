@@ -169,6 +169,51 @@ def _current_academic_year(today=None):
     return f"{start_year}-{end_year:02d}"
 
 
+def _default_student_profile():
+    return {
+        "board": "Auto",
+        "class_level": "Auto",
+        "medium": "Auto",
+        "goal": "Board exam prep",
+        "city": "",
+    }
+
+
+def _profile_from_keys(prefix: str):
+    return {
+        "board": st.session_state.get(f"{prefix}_board", "Auto"),
+        "class_level": st.session_state.get(f"{prefix}_class_level", "Auto"),
+        "medium": st.session_state.get(f"{prefix}_medium", "Auto"),
+        "goal": st.session_state.get(f"{prefix}_goal", "Board exam prep"),
+        "city": st.session_state.get(f"{prefix}_city", ""),
+    }
+
+
+def _assistant_message_entries(messages):
+    entries = []
+    assistant_number = 0
+    for idx, message in enumerate(messages[1:], start=1):
+        if message.get("role") == "assistant":
+            assistant_number += 1
+            content = (message.get("content") or "").strip()
+            snippet = content[:72] + ("..." if len(content) > 72 else "")
+            entries.append(
+                {
+                    "index": idx,
+                    "label": f"AI response {assistant_number}: {snippet or 'empty response'}",
+                    "content": content,
+                }
+            )
+    return entries
+
+
+def _latest_assistant_response(messages):
+    for message in reversed(messages):
+        if message.get("role") == "assistant":
+            return message.get("content", "")
+    return ""
+
+
 def generate_png_bytes(text: str, width: int = 1200, padding: int = 20) -> Optional[bytes]:
     try:
         from PIL import Image, ImageDraw, ImageFont
@@ -219,14 +264,23 @@ if "messages" not in st.session_state:
         {"role": "system", "content": _advisor_persona()}
     ]
 
-if "student_profile" not in st.session_state:
-    st.session_state.student_profile = {
-        "board": "Auto",
-        "class_level": "Auto",
-        "medium": "Auto",
-        "goal": "Board exam prep",
-        "city": ""
-    }
+if "student_profile_saved" not in st.session_state:
+    st.session_state.student_profile_saved = _default_student_profile()
+
+if "student_profile_draft" not in st.session_state:
+    st.session_state.student_profile_draft = dict(st.session_state.student_profile_saved)
+
+for field, default in {
+    "board": st.session_state.student_profile_draft.get("board", "Auto"),
+    "class_level": st.session_state.student_profile_draft.get("class_level", "Auto"),
+    "medium": st.session_state.student_profile_draft.get("medium", "Auto"),
+    "goal": st.session_state.student_profile_draft.get("goal", "Board exam prep"),
+    "city": st.session_state.student_profile_draft.get("city", ""),
+}.items():
+    st.session_state.setdefault(f"profile_draft_{field}", default)
+
+if "chat_reset_requested" not in st.session_state:
+    st.session_state.chat_reset_requested = False
 
 PROJECT_PAGES = ["Chat", "Demo", "Knowledge Base", "Book Appointment", "Analytics", "Admin"]
 
@@ -248,8 +302,24 @@ with st.sidebar:
 
     st.markdown("---")
     st.header("Student profile")
-    st.session_state.student_profile = _build_student_profile()
-    st.caption(_profile_summary(st.session_state.student_profile))
+    with st.form("student_profile_form", clear_on_submit=False):
+        st.selectbox("Board", _student_profile_choices()["board"], index=_student_profile_choices()["board"].index(st.session_state.get("profile_draft_board", "Auto")), key="profile_draft_board")
+        st.selectbox("Class", _student_profile_choices()["class_level"], index=_student_profile_choices()["class_level"].index(st.session_state.get("profile_draft_class_level", "Auto")), key="profile_draft_class_level")
+        st.selectbox("Preferred medium", _student_profile_choices()["medium"], index=_student_profile_choices()["medium"].index(st.session_state.get("profile_draft_medium", "Auto")), key="profile_draft_medium")
+        st.selectbox("Primary goal", _student_profile_choices()["goal"], index=_student_profile_choices()["goal"].index(st.session_state.get("profile_draft_goal", "Board exam prep")), key="profile_draft_goal")
+        st.text_input("City / district (optional)", value=st.session_state.get("profile_draft_city", ""), key="profile_draft_city")
+        save_profile = st.form_submit_button("Save profile")
+
+    st.session_state.student_profile_draft = _profile_from_keys("profile_draft")
+    if save_profile:
+        st.session_state.student_profile_saved = dict(st.session_state.student_profile_draft)
+        st.success("Student profile saved. Chat responses will now use this profile.")
+        st.rerun()
+
+    st.caption("Saved profile")
+    st.caption(_profile_summary(st.session_state.student_profile_saved))
+    if st.session_state.student_profile_draft != st.session_state.student_profile_saved:
+        st.warning("You have unsaved profile changes. Click Save profile to apply them to the chatbot.")
 
     manual_values = {
         "openai_api_key": None,
@@ -295,24 +365,36 @@ with st.sidebar:
         if dialogflow_access_token:
             os.environ["DIALOGFLOW_ACCESS_TOKEN"] = dialogflow_access_token
 
+saved_student_profile = dict(st.session_state.student_profile_saved)
+
 if page == "Chat":
     academic_year = _current_academic_year()
     st.write("A Punjab-aware chatbot for school guidance, board exam planning, and career direction.")
     if provider == "Mock":
         st.info("You can start chatting now. Add a key later to switch from Mock mode.")
     st.success(f"Active academic year: {academic_year}")
-    st.caption(_profile_summary(st.session_state.student_profile))
+    st.caption(f"Active saved profile: {_profile_summary(saved_student_profile)}")
+
+    chat_top_left, chat_top_right = st.columns([1, 2])
+    with chat_top_left:
+        if st.button("Reset conversation", type="secondary"):
+            st.session_state.messages = [{"role": "system", "content": _advisor_persona()}]
+            st.session_state.chat_reset_requested = True
+            st.success("Conversation cleared.")
+            st.rerun()
+    with chat_top_right:
+        st.caption("Edit previous AI responses below and download the latest one as PNG or PDF.")
 
     with st.expander("Quick starter questions", expanded=True):
         cols = st.columns(3)
-        prompts = _starter_prompts(st.session_state.student_profile)
+        prompts = _starter_prompts(saved_student_profile)
         for idx, prompt in enumerate(prompts):
             with cols[idx % 3]:
                 if st.button(prompt, key=f"starter_{idx}"):
                     st.session_state.messages.append({"role": "user", "content": prompt})
                     with st.spinner("Thinking..."):
                         reply = client.send_message([
-                            {"role": "system", "content": _build_system_message(st.session_state.student_profile, academic_year)},
+                            {"role": "system", "content": _build_system_message(saved_student_profile, academic_year)},
                             *st.session_state.messages[1:],
                         ])
                     st.session_state.messages.append({"role": "assistant", "content": reply})
@@ -325,7 +407,7 @@ if page == "Chat":
         st.session_state.messages.append({"role": "user", "content": user_input})
         with st.spinner("Thinking..."):
             reply = client.send_message([
-                {"role": "system", "content": _build_system_message(st.session_state.student_profile, academic_year)},
+                {"role": "system", "content": _build_system_message(saved_student_profile, academic_year)},
                 *st.session_state.messages[1:],
             ])
         st.session_state.messages.append({"role": "assistant", "content": reply})
@@ -339,6 +421,29 @@ if page == "Chat":
             st.chat_message("user").write(msg["content"])
         elif msg["role"] == "assistant":
             st.chat_message("assistant").write(msg["content"])
+
+    assistant_entries = _assistant_message_entries(st.session_state.messages)
+    if assistant_entries:
+        st.markdown("---")
+        st.subheader("Edit previous AI response")
+        chosen_entry = st.selectbox("Choose a response to edit", assistant_entries, format_func=lambda item: item["label"], key="chosen_ai_entry")
+        edited_response = st.text_area("Edit AI response", value=chosen_entry["content"], height=220, key=f"edit_ai_response_{chosen_entry['index']}")
+        edit_save_col, edit_download_col = st.columns([1, 1])
+        with edit_save_col:
+            if st.button("Save edited response", key="save_edited_response"):
+                st.session_state.messages[chosen_entry["index"]]["content"] = edited_response.strip()
+                st.success("AI response updated.")
+                st.rerun()
+        latest_ai_response = _latest_assistant_response(st.session_state.messages)
+        with edit_download_col:
+            st.caption("Download the latest AI response")
+            if latest_ai_response:
+                latest_png = generate_png_bytes(latest_ai_response)
+                latest_pdf = generate_pdf_bytes(latest_ai_response)
+                if latest_png:
+                    st.download_button("Download latest AI response PNG", data=latest_png, file_name="ai_response.png", mime="image/png")
+                if latest_pdf:
+                    st.download_button("Download latest AI response PDF", data=latest_pdf, file_name="ai_response.pdf", mime="application/pdf")
 
     st.markdown("---")
     st.markdown("**Tip:** Keep your board and class updated for sharper advice.")
@@ -359,7 +464,7 @@ elif page == "Knowledge Base":
                 st.write("**Common streams:**", ", ".join(board.get("common_streams", [])))
     # Punjab district-specific resources
     punjab_resources = kb.get("punjab_resources", [])
-    if punjab_resources and (st.session_state.student_profile.get("board") in ("PSEB", "pseb", "Punjab") or True):
+    if punjab_resources and (saved_student_profile.get("board") in ("PSEB", "pseb", "Punjab") or True):
         st.subheader("Punjab District Resources")
         for res in punjab_resources:
             with st.expander(res.get("district"), expanded=False):
@@ -450,7 +555,7 @@ elif page == "Demo":
                     st.session_state.messages.append({"role": "user", "content": case["prompt"]})
                     with st.spinner("Querying advisor..."):
                         reply = client.send_message([
-                            {"role": "system", "content": _build_system_message(st.session_state.student_profile, academic_year)},
+                            {"role": "system", "content": _build_system_message(saved_student_profile, academic_year)},
                             *st.session_state.messages[1:],
                         ])
                     st.session_state.messages.append({"role": "assistant", "content": reply})
@@ -466,7 +571,7 @@ elif page == "Book Appointment":
     name = st.text_input("Student name")
     email = st.text_input("Email")
     when = st.text_input("When (ISO datetime or simple text)")
-    notes = st.text_area("Notes (optional)", value=f"Board: {st.session_state.student_profile.get('board', 'Auto')} | Class: {st.session_state.student_profile.get('class_level', 'Auto')} | Goal: {st.session_state.student_profile.get('goal', 'Board exam prep')}")
+    notes = st.text_area("Notes (optional)", value=f"Board: {saved_student_profile.get('board', 'Auto')} | Class: {saved_student_profile.get('class_level', 'Auto')} | Goal: {saved_student_profile.get('goal', 'Board exam prep')}")
     if st.button("Book"):
         if not name or not email or not when:
             st.error("Please fill in your name, email, and preferred time.")
@@ -492,8 +597,8 @@ elif page == "Admin":
     st.subheader("Course Recommendations (demo)")
     interests = st.text_input("Interests (comma separated)", value="math, science, Punjabi, programming")
     completed = st.text_input("Completed courses (comma separated)")
-    goals = st.text_input("Goals (short text)", value=st.session_state.student_profile.get("goal", "Board exam prep"))
-    st.caption(_profile_summary(st.session_state.student_profile))
+    goals = st.text_input("Goals (short text)", value=saved_student_profile.get("goal", "Board exam prep"))
+    st.caption(_profile_summary(saved_student_profile))
     if st.button("Recommend Courses"):
         profile = {
             "interests": [i.strip() for i in interests.split(",") if i.strip()],
