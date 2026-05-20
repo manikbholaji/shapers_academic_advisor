@@ -33,6 +33,17 @@ To enable real API usage in Streamlit Community Cloud:
 
 If no secret is set, the app intentionally falls back to Mock mode so the UI still works.
 
+   ### Secret reference
+
+   | Secret | Purpose |
+   | --- | --- |
+   | `OPENAI_API_KEY` | Enables OpenAI-backed responses |
+   | `GOOGLE_API_KEY` | Enables Google Gemini-backed responses |
+   | `DIALOGFLOW_PROJECT_ID` | Required for Dialogflow runtime calls |
+   | `DIALOGFLOW_ACCESS_TOKEN` | Required for Dialogflow runtime calls |
+
+   If multiple secrets are present, the app follows the selected provider in the sidebar. When **Auto (recommended)** is selected, it prefers OpenAI, then Google, then Mock mode.
+
 ## Local setup
 
 ```powershell
