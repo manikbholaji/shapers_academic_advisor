@@ -992,33 +992,6 @@ elif page == "Admin":
 
         st.info("This pathway view is designed as an end-to-end adviser: it starts from Class 11 stream choice and maps the full journey to diploma, UG, and PG options.")
 
-    st.subheader("Stream guidance for Class 11/12")
-    stream_interests = st.text_input("Stream interests (comma separated)", value="biology, maths, coding")
-    stream_strengths = st.text_input("Stream strengths (comma separated)", value="math, writing, problem solving")
-    stream_marks = st.text_input("Subject marks (optional, e.g. maths:82, science:78, commerce:70)", value="")
-    if st.button("Suggest streams"):
-        marks = {}
-        for item in stream_marks.split(","):
-            if ":" not in item:
-                continue
-            subject, score = item.split(":", 1)
-            try:
-                marks[subject.strip().lower()] = float(score.strip())
-            except ValueError:
-                continue
-
-        stream_profile = {
-            "board": saved_student_profile.get("board", "Auto"),
-            "class_level": saved_student_profile.get("class_level", "Auto"),
-            "interests": [item.strip() for item in stream_interests.split(",") if item.strip()],
-            "strengths": [item.strip() for item in stream_strengths.split(",") if item.strip()],
-            "goals": goals,
-            "marks": marks,
-        }
-        stream_recs = recommender.recommend_streams(stream_profile)
-        for rec in stream_recs:
-            with st.expander(f"{rec.get('name')} - {rec.get('subjects')}", expanded=False):
-                st.write(rec.get("best_for"))
-                if rec.get("evidence"):
-                    st.caption(f"Matched signals: {rec.get('evidence')}")
+    st.subheader("Advisor note")
+    st.info("The pathway advisor now covers stream choice, diploma options, undergraduate destinations, and postgraduate routes in one place.")
 

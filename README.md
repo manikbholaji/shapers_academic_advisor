@@ -1,10 +1,10 @@
 # SHAPERS Academic Advisor
 
-SHAPERS Academic Advisor is a Streamlit app for Indian students that provides board-aware guidance, Class 11/12 stream selection help, diploma/undergraduate/postgraduate program recommendations, appointment booking, and downloadable AI-generated study cheat-sheets.
+SHAPERS Academic Advisor is a Streamlit app for Indian students that provides board-aware guidance, a unified Class 11 to postgraduate pathway advisor, appointment booking, and downloadable AI-generated study cheat-sheets.
 
 ## Highlights
 
-- India-wide academic advisor experience for CBSE, ICSE, State Board, and stream-selection support.
+- India-wide academic advisor experience for CBSE, ICSE, State Board, and end-to-end pathway planning.
 - Provider-agnostic AI backend with OpenAI, Google Gemini, Dialogflow, and offline Mock mode.
 - Saved student profile workflow with a required **Save profile** action before advice updates.
 - Gemini-style prompt composer that lets you choose the output format before submission: Text, PNG, or PDF.
@@ -69,15 +69,10 @@ streamlit run app/streamlit_app.py
 - Use the prompt history editor to revise an earlier prompt and resubmit it in place.
 - **Reset conversation** clears the current chat and starts fresh.
 
-### Stream guidance
+### Pathway advisor
 
-- The admin panel includes a stream recommender for Class 11 and Class 12.
-- It helps compare **Humanities**, **Commerce**, **Medical**, and **Non-medical** based on interests, strengths, and marks.
-
-### Program pathways
-
-- The admin panel also recommends **Diploma**, **Undergraduate**, and **Postgraduate** pathways in India.
-- Each recommendation includes example universities and colleges plus a note to verify the current admission cycle.
+- The admin panel now uses one combined advisor to map the full journey from Class 11 stream choice to diploma, undergraduate, and postgraduate options.
+- Pick a field of interest to see the recommended stream, action plan, entrance exams, example institutions, and career directions.
 
 ### Demo page
 
@@ -100,7 +95,7 @@ streamlit run app/streamlit_app.py
 - `app/streamlit_app.py` - Streamlit UI
 - `app/api_client.py` - OpenAI / Google / Dialogflow / Mock abstraction
 - `app/knowledge_base.json` - board, policy, and regional guidance data
-- `app/recommender.py` - course and pathway recommendation helper
+- `app/recommender.py` - pathway recommendation helper
 - `app/appointments.py` - appointment storage
 - `app/sentiment.py` - sentiment analysis
 - `app/analytics_module.py` - logging and summary stats
@@ -121,7 +116,7 @@ python -m pytest -q
 3. Add the required secrets in the Streamlit UI.
 4. Redeploy and verify the sidebar backend banner.
 5. Confirm the composer shows the selected response type and that the saved student profile is active after clicking **Save profile**.
-6. Check that Class 11/12 stream guidance, appointment slots, and A4 export previews render correctly.
+6. Check that the unified pathway advisor, appointment slots, and A4 export previews render correctly.
 
 ## Health checks and notifications
 
