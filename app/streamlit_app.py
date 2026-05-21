@@ -15,9 +15,162 @@ import json
 import io
 from typing import Optional
 
-st.set_page_config(page_title="SHAPERS Academic Advisor", page_icon=":mortar_board:")
-st.title("SHAPERS Academic Advisor for Indian Students")
-st.caption("An experienced, friendly academic guide for CBSE, ICSE, State Board, and stream-selection support.")
+st.set_page_config(
+    page_title="SHAPERS Academic Advisor",
+    page_icon=":mortar_board:",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# Professional custom CSS styling
+st.markdown("""
+<style>
+    /* Global styling */
+    :root {
+        --primary: #0f172a;
+        --accent: #3b82f6;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --light: #f8fafc;
+        --border: #e2e8f0;
+    }
+    
+    /* Main content area */
+    .main {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+    
+    /* Headers */
+    h1 {
+        color: var(--primary) !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.02em !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    h2 {
+        color: var(--primary) !important;
+        font-weight: 600 !important;
+        border-bottom: 3px solid var(--accent) !important;
+        padding-bottom: 0.5rem !important;
+        margin-top: 1.5rem !important;
+    }
+    
+    h3 {
+        color: var(--primary) !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Caption and small text */
+    .caption {
+        color: #64748b !important;
+        font-size: 0.875rem !important;
+    }
+    
+    /* Buttons */
+    .stButton > button {
+        width: 100% !important;
+        background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 0.5rem !important;
+        font-weight: 600 !important;
+        padding: 0.75rem 1.5rem !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3) !important;
+    }
+    
+    /* Form inputs */
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea,
+    .stSelectbox > div > div > select,
+    .stNumberInput > div > div > input {
+        border: 2px solid var(--border) !important;
+        border-radius: 0.5rem !important;
+        padding: 0.75rem !important;
+        font-size: 0.95rem !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    .stTextInput > div > div > input:focus,
+    .stTextArea > div > div > textarea:focus,
+    .stSelectbox > div > div > select:focus,
+    .stNumberInput > div > div > input:focus {
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+    }
+    
+    /* Info, warning, success boxes */
+    .stInfo {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(59, 130, 246, 0.02) 100%) !important;
+        border-left: 4px solid var(--accent) !important;
+        border-radius: 0.5rem !important;
+        padding: 1rem !important;
+    }
+    
+    .stSuccess {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%) !important;
+        border-left: 4px solid var(--success) !important;
+        border-radius: 0.5rem !important;
+        padding: 1rem !important;
+    }
+    
+    .stWarning {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(245, 158, 11, 0.02) 100%) !important;
+        border-left: 4px solid var(--warning) !important;
+        border-radius: 0.5rem !important;
+        padding: 1rem !important;
+    }
+    
+    .stError {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(239, 68, 68, 0.02) 100%) !important;
+        border-left: 4px solid var(--danger) !important;
+        border-radius: 0.5rem !important;
+        padding: 1rem !important;
+    }
+    
+    /* Expander styling */
+    .streamlit-expanderHeader {
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+        border-radius: 0.5rem !important;
+        border-left: 4px solid var(--accent) !important;
+    }
+    
+    /* Sidebar */
+    .css-1d391kg {
+        background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%) !important;
+    }
+    
+    /* Divider */
+    hr {
+        border: none !important;
+        height: 2px !important;
+        background: linear-gradient(90deg, var(--border) 0%, transparent 100%) !important;
+        margin: 2rem 0 !important;
+    }
+    
+    /* Chat messages */
+    .stChatMessage {
+        border-radius: 0.75rem !important;
+        padding: 1rem !important;
+    }
+    
+    /* Data frames */
+    .stDataFrame {
+        border: 1px solid var(--border) !important;
+        border-radius: 0.5rem !important;
+        overflow: hidden !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+st.title("🎓 SHAPERS Academic Advisor for Indian Students")
+st.markdown("<p style='color: #64748b; font-size: 1.1rem; margin-top: -0.5rem;'>An experienced, friendly academic guide for CBSE, ICSE, State Board, and career pathways</p>", unsafe_allow_html=True)
 
 
 def _load_secrets():
@@ -663,32 +816,54 @@ saved_student_profile = dict(st.session_state.student_profile_saved)
 
 if page == "Chat":
     academic_year = _current_academic_year()
-    st.write("An India-wide academic chatbot for school guidance, board exam planning, stream selection, and career direction.")
-    if provider == "Mock":
-        st.info("You can start chatting now. Add a key later to switch from Mock mode.")
-    st.success(f"Active academic year: {academic_year}")
-    st.caption(f"Active saved profile: {_profile_summary(saved_student_profile)}")
-
-    st.caption("Choose the answer format first, then send one focused prompt.")
-
+    
+    # Header section with gradient
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.markdown("<h2>💬 Chat with Your Academic Advisor</h2>", unsafe_allow_html=True)
+        st.markdown("Ask for study plans, stream guidance, admission help, exam tips, and more...")
+    with col2:
+        st.metric("Academic Year", academic_year)
+    
+    # Status cards
+    status_col1, status_col2 = st.columns(2)
+    with status_col1:
+        if provider == "Mock":
+            st.info("📝 Mock mode active - add an API key to enable AI responses")
+        else:
+            st.success(f"✅ {provider} API connected")
+    with status_col2:
+        st.info(f"👤 Profile: {_profile_summary(saved_student_profile) or 'Update your profile in sidebar'}")
+    
+    st.markdown("---")
+    
+    # Prompt composer
     with st.form("prompt_composer_form", clear_on_submit=True):
-        st.subheader("Compose your question")
-        prompt_text = st.text_area("Ask anything", placeholder="Ask for study plans, stream guidance, admission help, exam tips, and more...", height=120)
-        response_format = st.radio(
-            "Reply format",
-            ["Text", "PNG", "PDF"],
-            horizontal=True,
-            help="Choose Text for a chat reply, PNG for an image-style response, or PDF for a document-style response.",
+        st.markdown("<h3>Your Question</h3>", unsafe_allow_html=True)
+        prompt_text = st.text_area(
+            "Ask anything",
+            placeholder="Ask for study plans, stream guidance, admission help, exam tips, and more...",
+            height=120,
+            label_visibility="collapsed"
         )
-        composer_col_left, composer_col_right = st.columns([1, 1])
-        with composer_col_left:
-            send_prompt = st.form_submit_button("Generate reply")
-        with composer_col_right:
-            st.caption("You can revise and resubmit earlier prompts below.")
+        
+        col_format = st.columns([2, 1, 1])
+        with col_format[0]:
+            response_format = st.radio(
+                "Response format",
+                ["Text", "PNG", "PDF"],
+                horizontal=True,
+                help="Choose Text for a chat reply, PNG for an image-style response, or PDF for a document-style response.",
+                label_visibility="collapsed"
+            )
+        with col_format[1]:
+            send_prompt = st.form_submit_button("🚀 Generate Reply", use_container_width=True)
+        with col_format[2]:
+            st.caption("📋 Edit earlier prompts below")
 
     if send_prompt and prompt_text.strip():
         st.session_state.messages.append({"role": "user", "content": prompt_text.strip()})
-        with st.spinner("Generating response..."):
+        with st.spinner("🤔 Generating response..."):
             reply = _generate_assistant_reply(client, saved_student_profile, academic_year, prompt_text.strip(), st.session_state.messages[1:-1])
         if response_format == "Text":
             st.session_state.messages.append({"role": "assistant", "content": reply})
@@ -713,14 +888,16 @@ if page == "Chat":
         analytics_module.log_interaction(user="anonymous", role="assistant", message=reply, sentiment_label="", compound=0.0)
         st.rerun()
 
-    with st.expander("Quick starter questions", expanded=True):
-        cols = st.columns(3)
+    # Quick starter prompts
+    st.markdown("---")
+    with st.expander("💡 Quick Starter Questions", expanded=True):
         prompts = _starter_prompts(saved_student_profile)
-        for idx, prompt in enumerate(prompts):
-            with cols[idx % 3]:
-                if st.button(prompt, key=f"starter_{idx}"):
+        cols = st.columns(len(prompts))
+        for idx, (col, prompt) in enumerate(zip(cols, prompts)):
+            with col:
+                if st.button(f"Q{idx+1}: {prompt[:40]}...", key=f"starter_{idx}", use_container_width=True):
                     st.session_state.messages.append({"role": "user", "content": prompt})
-                    with st.spinner("Thinking..."):
+                    with st.spinner("🤔 Thinking..."):
                         reply = client.send_message([
                             {"role": "system", "content": _build_system_message(saved_student_profile, academic_year)},
                             *st.session_state.messages[1:],
@@ -731,112 +908,171 @@ if page == "Chat":
                     analytics_module.log_interaction(user="anonymous", role="assistant", message=reply, sentiment_label="", compound=0.0)
                     st.rerun()
 
+    # Conversation history
+    st.markdown("---")
+    st.markdown("<h3>📜 Conversation</h3>", unsafe_allow_html=True)
     for msg in st.session_state.messages[1:]:
         if msg["role"] == "user":
             st.chat_message("user").write(msg["content"])
         elif msg["role"] == "assistant":
             st.chat_message("assistant").write(msg["content"])
 
+    # Export section
     if getattr(st.session_state, "latest_export_bytes", None):
         st.markdown("---")
-        st.subheader("Latest generated file")
+        st.markdown("<h3>💾 Latest Generated File</h3>", unsafe_allow_html=True)
         export_name = st.session_state.get("latest_export_name", "ai_response.txt")
         export_format = st.session_state.get("latest_export_format", "text")
-        if export_format == "png":
-            st.image(st.session_state.latest_export_bytes)
-            st.download_button("Download PNG", data=st.session_state.latest_export_bytes, file_name=export_name, mime="image/png")
-        elif export_format == "pdf":
-            st.download_button("Download PDF", data=st.session_state.latest_export_bytes, file_name=export_name, mime="application/pdf")
-        else:
-            st.download_button("Download text", data=st.session_state.latest_export_bytes, file_name=export_name, mime="text/plain")
+        export_col1, export_col2 = st.columns([3, 1])
+        with export_col1:
+            if export_format == "png":
+                st.image(st.session_state.latest_export_bytes)
+            elif export_format == "pdf":
+                st.info("📄 PDF generated - download to view")
+            else:
+                st.info("📝 Text response ready - download below")
+        with export_col2:
+            if export_format == "png":
+                st.download_button("⬇️ PNG", data=st.session_state.latest_export_bytes, file_name=export_name, mime="image/png", use_container_width=True)
+            elif export_format == "pdf":
+                st.download_button("⬇️ PDF", data=st.session_state.latest_export_bytes, file_name=export_name, mime="application/pdf", use_container_width=True)
+            else:
+                st.download_button("⬇️ Text", data=st.session_state.latest_export_bytes, file_name=export_name, mime="text/plain", use_container_width=True)
 
+    # Prompt history editor
     _render_prompt_history_editor(saved_student_profile, academic_year, client)
 
     st.markdown("---")
-    st.markdown("**Tip:** Keep your board, class, and goal updated for sharper advice.")
+    st.markdown("💡 **Pro tip:** Keep your board, class, and goal updated in the sidebar for more personalized advice.")
+
 
 elif page == "Knowledge Base":
     academic_year = _current_academic_year()
-    st.header(f"Knowledge Base & Policies ({academic_year})")
-    st.caption(f"Automatically aligned to the current academic year: {academic_year}.")
+    st.markdown(f"<h2>📚 Knowledge Base & Policies ({academic_year})</h2>", unsafe_allow_html=True)
+    st.markdown(f"Automatically aligned to the current academic year: **{academic_year}**. India-wide diploma, undergraduate, and postgraduate pathways alongside board guidance.")
+    
     kb = json.load(open("app/knowledge_base.json", "r", encoding="utf-8"))
     kb["academic_year"] = academic_year
-    st.caption("The knowledge base now centers India-wide diploma, undergraduate, and postgraduate pathways alongside board guidance.")
-    if kb.get("boards"):
-        st.subheader("Indian Education Boards")
-        for board in kb.get("boards", []):
-            with st.expander(f"{board.get('name')} — {board.get('type')}", expanded=False):
-                st.write(board.get("overview"))
-                st.write("**Classes:**", ", ".join(board.get("classes", [])))
-                st.write("**Focus areas:**", ", ".join(board.get("core_focus", [])))
-                st.write("**Common streams:**", ", ".join(board.get("common_streams", [])))
-    if kb.get("programs"):
-        st.subheader("India program pathways")
-        for program in kb.get("programs", []):
-            with st.expander(f"{program.get('level')} — {program.get('title')}", expanded=False):
-                st.write(f"**Field:** {program.get('field')}")
-                st.write(program.get("best_for"))
-                if program.get("entry_after"):
-                    st.caption(f"Entry after: {', '.join(program.get('entry_after'))}")
-                if program.get("institutions"):
-                    st.write("**Example institutions:**")
-                    for institution in program.get("institutions", []):
-                        st.write(f"- {institution}")
-                if program.get("note"):
-                    st.info(program.get("note"))
-    regional_resources = kb.get("regional_resources", [])
-    if regional_resources:
-        st.subheader("Regional study tips")
-        for res in regional_resources:
-            with st.expander(res.get("label", "Study tip"), expanded=False):
-                st.write(res.get("tips"))
-    st.subheader("Policies")
-    for p in kb.get("policies", []):
-        st.write(f"**{p.get('title')}** — {p.get('summary')}")
-        if st.checkbox(f"Show details: {p.get('title')}"):
-            st.write(p.get("details"))
-    st.subheader("School foundation references")
-    st.caption("These are legacy board-prep resources kept for quick revision support.")
-    for c in kb.get("courses", []):
-        st.write(f"**{c.get('code')} - {c.get('name')}**")
-        st.write(c.get("description"))
+    
+    st.markdown("---")
+    
+    # Tabs or sections
+    tab1, tab2, tab3, tab4 = st.tabs(["🎓 Boards", "📖 Programs", "🌍 Regional Tips", "📋 Policies"])
+    
+    with tab1:
+        st.markdown("<h3>Indian Education Boards</h3>", unsafe_allow_html=True)
+        if kb.get("boards"):
+            for board in kb.get("boards", []):
+                with st.expander(f"📌 {board.get('name')} — {board.get('type')}", expanded=False):
+                    col_board_1, col_board_2 = st.columns([2, 1])
+                    with col_board_1:
+                        st.write(board.get("overview"))
+                        st.write("**Classes:**", ", ".join(board.get("classes", [])))
+                    with col_board_2:
+                        st.write("**Core Focus:**")
+                        for area in board.get("core_focus", []):
+                            st.write(f"• {area}")
+                    st.write("**Common Streams:**", ", ".join(board.get("common_streams", [])))
+    
+    with tab2:
+        st.markdown("<h3>India Program Pathways</h3>", unsafe_allow_html=True)
+        if kb.get("programs"):
+            for program in kb.get("programs", []):
+                level_icon = "📖" if program.get("level") == "Diploma" else "🎓" if program.get("level") == "Undergraduate" else "🏆"
+                with st.expander(f"{level_icon} {program.get('level')} — {program.get('title')}", expanded=False):
+                    st.write(f"**Field:** {program.get('field')}")
+                    st.write(program.get("best_for"))
+                    
+                    col_prog_1, col_prog_2 = st.columns(2)
+                    with col_prog_1:
+                        if program.get("entry_after"):
+                            st.caption(f"**Entry after:** {', '.join(program.get('entry_after'))}")
+                    with col_prog_2:
+                        if program.get("note"):
+                            st.info(program.get("note"))
+                    
+                    if program.get("institutions"):
+                        st.markdown("**Example Institutions:**")
+                        for institution in program.get("institutions", []):
+                            st.write(f"✓ {institution}")
+    
+    with tab3:
+        st.markdown("<h3>Regional Study Tips</h3>", unsafe_allow_html=True)
+        regional_resources = kb.get("regional_resources", [])
+        if regional_resources:
+            for res in regional_resources:
+                with st.expander(f"🌏 {res.get('label', 'Study tip')}", expanded=False):
+                    st.write(res.get("tips"))
+        else:
+            st.info("No regional resources available yet.")
+    
+    with tab4:
+        st.markdown("<h3>Education Policies</h3>", unsafe_allow_html=True)
+        if kb.get("policies"):
+            for p in kb.get("policies", []):
+                with st.expander(f"📄 {p.get('title')}", expanded=False):
+                    st.write(p.get("summary"))
+                    if st.checkbox(f"Show full details", key=f"policy_{p.get('title')}"):
+                        st.write(p.get("details"))
+        else:
+            st.info("No policies available yet.")
+    
+    st.markdown("---")
+    
+    st.markdown("<h3>📝 Legacy Board Prep Resources</h3>", unsafe_allow_html=True)
+    st.caption("Foundation references for quick revision support")
+    
+    if kb.get("courses"):
+        for c in kb.get("courses", []):
+            with st.expander(f"📖 {c.get('code')} - {c.get('name')}", expanded=False):
+                st.write(c.get("description"))
+                if c.get("tags"):
+                    st.caption(f"Tags: {', '.join(c.get('tags', []))}")
+    else:
+        st.info("No course references available.")
 
 elif page == "Demo":
-    st.header("Demo: Sample Prompts & Expected Answers")
-    st.caption("Quick examples to try — tailored for Indian students across CBSE, ICSE, and State Boards. Use the button in each card to open the prompt in Chat.")
+    st.markdown("<h2>🎯 Demo: Sample Prompts & Expected Answers</h2>", unsafe_allow_html=True)
+    st.markdown("Quick examples to try — tailored for Indian students across CBSE, ICSE, and State Boards.")
 
     academic_year = _current_academic_year()
 
     demo_cases = [
         {
-            "title": "Weekly study plan — Class 10",
+            "title": "📚 Weekly study plan — Class 10",
             "prompt": "Suggest a weekly study plan for Class 10 board exams, focusing on Maths and Science, including daily tasks and revision slots.",
             "expected": "A 7-day schedule splitting topics by chapter, daily practice problems, 30-40 minute revision at day end, weekly test on Sunday, and tips to balance school work with revision."
         },
         {
-            "title": "Improve marks in Mathematics",
+            "title": "📈 Improve marks in Mathematics",
             "prompt": "I get low marks in maths in tests. What are 5 practical steps I can take this month to improve for Class 10 boards?",
             "expected": "Focus on NCERT problems, practice previous year board questions, maintain formula sheet, time-bound mock tests, and targeted revision of weak chapters."
         },
         {
-            "title": "Stream selection after Class 10",
+            "title": "🎓 Stream selection after Class 10",
             "prompt": "I like biology and computers but my marks are mixed. Which stream should I pick after Class 10 to keep options open?",
             "expected": "Explain Science (Medical/Non-medical), Commerce, Humanities, tradeoffs, and suggest subject combinations that keep college options open."
         },
         {
-            "title": "Program pathway guidance",
+            "title": "🏫 Program pathway guidance",
             "prompt": "Recommend diploma, undergraduate, and postgraduate courses in India for a student interested in computer science, and mention specific universities or colleges that currently offer them.",
             "expected": "Compare diploma, UG, and PG routes, list example Indian institutions for each, mention eligibility, and remind the student to verify the current admission brochure and seat intake."
         },
         {
-            "title": "Scholarships & exam registrations",
+            "title": "💰 Scholarships & exam registrations",
             "prompt": "Tell me about common scholarships for Class 11 students and upcoming important exam registration dates.",
             "expected": "Summarize common scholarship schemes, eligibility basics, and registration windows for board exams and competitive exams; recommend official sites for verification."
         },
     ]
 
-    cols = st.columns(1)
-    lang = st.selectbox("Language / भाषा", ["English", "हिन्दी", "Hinglish", "Regional"], index=0)
+    # Cheatsheet section
+    st.markdown("---")
+    st.markdown("<h3>📋 Cheatsheet Downloads</h3>", unsafe_allow_html=True)
+    
+    lang_col = st.columns(1)[0]
+    with lang_col:
+        lang = st.selectbox("Select language", ["English", "हिन्दी", "Hinglish", "Regional"], index=0, label_visibility="collapsed")
+    
     asset_map = {
         "English": "cheatsheet_en.md",
         "हिन्दी": "cheatsheet_hi.md",
@@ -849,93 +1085,206 @@ elif page == "Demo":
             cheatsheet_text = f.read()
     except Exception:
         cheatsheet_text = ''
-    st.download_button(label=f"Download cheat-sheet ({lang})", data=cheatsheet_text, file_name=f"shapers_cheatsheet_{lang}.md")
-
+    
+    dl_col1, dl_col2, dl_col3 = st.columns(3)
+    with dl_col1:
+        st.download_button(label=f"📄 Markdown ({lang})", data=cheatsheet_text, file_name=f"shapers_cheatsheet_{lang}.md", use_container_width=True)
+    
     png_bytes = generate_png_bytes(cheatsheet_text)
     pdf_bytes = generate_pdf_bytes(cheatsheet_text)
-    if png_bytes:
-        st.subheader("Preview (image)")
-        st.image(png_bytes)
-        st.download_button("Download PNG", data=png_bytes, file_name=f"shapers_cheatsheet_{lang}.png", mime='image/png')
-    else:
-        st.info("Image preview unavailable: `Pillow` not installed. The deployed app will install it from `requirements.txt`.")
+    
+    with dl_col2:
+        if png_bytes:
+            st.download_button("🖼️ PNG", data=png_bytes, file_name=f"shapers_cheatsheet_{lang}.png", mime='image/png', use_container_width=True)
+        else:
+            st.info("PNG unavailable")
+    
+    with dl_col3:
+        if pdf_bytes:
+            st.download_button("📕 PDF", data=pdf_bytes, file_name=f"shapers_cheatsheet_{lang}.pdf", mime='application/pdf', use_container_width=True)
+        else:
+            st.info("PDF unavailable")
 
-    if pdf_bytes:
-        st.download_button("Download PDF", data=pdf_bytes, file_name=f"shapers_cheatsheet_{lang}.pdf", mime='application/pdf')
-    else:
-        st.info("PDF download unavailable: `reportlab` not installed. The deployed app will install it from `requirements.txt`.")
+    if png_bytes:
+        with st.expander("👁️ Preview Cheatsheet", expanded=False):
+            st.image(png_bytes)
+
+    # Demo cases
+    st.markdown("---")
+    st.markdown("<h3>💬 Sample Conversations</h3>", unsafe_allow_html=True)
+    
     for idx, case in enumerate(demo_cases):
-        with st.expander(f"{case['title']}", expanded=(idx == 0)):
-            st.write("**Prompt:**")
-            st.write(case["prompt"])
-            st.write("**Expected answer (summary):**")
-            st.info(case["expected"])
-            row = st.columns([3,1])
-            with row[0]:
-                if st.button("Use in Chat", key=f"use_chat_{idx}"):
-                    # push to messages and run a single assistant reply
+        with st.expander(case['title'], expanded=(idx == 0)):
+            col_prompt, col_action = st.columns([3, 1])
+            
+            with col_prompt:
+                st.markdown("**📝 Prompt:**")
+                st.write(case["prompt"])
+                st.markdown("**✅ Expected Summary:**")
+                st.info(case["expected"])
+            
+            with col_action:
+                if st.button("➡️ Use in Chat", key=f"use_chat_{idx}", use_container_width=True):
                     st.session_state.messages.append({"role": "user", "content": case["prompt"]})
-                    with st.spinner("Querying advisor..."):
+                    with st.spinner("🔄 Sending..."):
                         reply = client.send_message([
                             {"role": "system", "content": _build_system_message(saved_student_profile, academic_year)},
                             *st.session_state.messages[1:],
                         ])
                     st.session_state.messages.append({"role": "assistant", "content": reply})
-                    st.success("Prompt sent to Chat. Switch to the Chat page to view the full conversation.")
-            with row[1]:
-                if st.button("Copy prompt", key=f"copy_{idx}"):
-                    st.write("Prompt copied to clipboard (use your browser feature).")
+                    st.success("✅ Sent to Chat! Switch to Chat tab to view.")
+    
     st.markdown("---")
-    st.write("Tip: Update your profile (Board, Class, City) in the sidebar — this helps the advisor tailor responses to your board and academic goals.")
+    st.markdown("💡 **Tip:** Update your Board, Class, and City in the sidebar for personalized responses.")
+
 
 elif page == "Book Appointment":
-    st.header("Book an Appointment with an Advisor")
-    name = st.text_input("Student name")
-    email = st.text_input("Email")
-    appointment_date = st.date_input("Appointment date", min_value=date.today(), value=date.today())
-    available_slots = _filtered_appointment_slots(appointment_date)
-    if available_slots:
-        appointment_time = st.selectbox(
-            "Appointment time (peak hours only)",
-            available_slots,
-            format_func=lambda value: datetime.strptime(value, "%H:%M").strftime("%I:%M %p"),
+    st.markdown("<h2>📅 Book an Appointment with an Advisor</h2>", unsafe_allow_html=True)
+    st.markdown("Schedule a 1:1 session for personalized academic guidance during peak working hours (10 AM - 6 PM).")
+    
+    st.markdown("---")
+    
+    with st.form("appointment_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("<h4>Personal Information</h4>", unsafe_allow_html=True)
+            name = st.text_input("Full name", placeholder="Enter your name")
+            email = st.text_input("Email address", placeholder="your.email@example.com")
+        
+        with col2:
+            st.markdown("<h4>Appointment Details</h4>", unsafe_allow_html=True)
+            appointment_date = st.date_input("📅 Preferred date", min_value=date.today(), value=date.today())
+            available_slots = _filtered_appointment_slots(appointment_date)
+            
+            if available_slots:
+                appointment_time = st.selectbox(
+                    "⏰ Time slot (peak hours 10 AM - 6 PM)",
+                    available_slots,
+                    format_func=lambda value: datetime.strptime(value, "%H:%M").strftime("%I:%M %p"),
+                )
+                appointment_when = datetime.combine(appointment_date, datetime.strptime(appointment_time, "%H:%M").time()).isoformat(timespec="minutes")
+            else:
+                appointment_time = None
+                appointment_when = None
+                st.warning("❌ No slots available for this date. Please choose another date.")
+        
+        st.markdown("---")
+        
+        st.markdown("<h4>Additional Notes</h4>", unsafe_allow_html=True)
+        notes = st.text_area(
+            "Tell us about your academic goals and concerns (optional)",
+            value=f"Board: {saved_student_profile.get('board', 'Not specified')} | Class: {saved_student_profile.get('class_level', 'Not specified')} | Goal: {saved_student_profile.get('goal', 'Not specified')}",
+            height=100,
+            placeholder="E.g., I need help with stream selection, exam preparation, etc."
         )
-        appointment_when = datetime.combine(appointment_date, datetime.strptime(appointment_time, "%H:%M").time()).isoformat(timespec="minutes")
-        st.caption(f"Selected time window: {appointment_when}")
-    else:
-        appointment_time = None
-        appointment_when = None
-        st.info("No remaining peak-hour slots are available for today. Please choose a future date.")
-    notes = st.text_area("Notes (optional)", value=f"Board: {saved_student_profile.get('board', 'Auto')} | Class: {saved_student_profile.get('class_level', 'Auto')} | Goal: {saved_student_profile.get('goal', 'Board exam prep')}")
-    if st.button("Book"):
+        
+        st.markdown("---")
+        
+        submit_button = st.form_submit_button("✅ Confirm Booking", use_container_width=True)
+    
+    if submit_button:
         if not name or not email or not appointment_when:
-            st.error("Please fill in your name, email, and select a working-hour slot.")
+            st.error("❌ Please fill in your name, email, and select a time slot.")
         else:
             appt = appointments.book_appointment(name, email, appointment_when, notes=notes)
-            st.success(f"Booked appointment id {appt.get('id')} for {appt.get('when')}")
-            st.caption("Your board/class context has been added to the notes for better follow-up.")
+            st.success(f"✅ Appointment confirmed!")
+            st.balloons()
+            col_info1, col_info2 = st.columns(2)
+            with col_info1:
+                st.info(f"**Appointment ID:** {appt.get('id')}")
+            with col_info2:
+                st.info(f"**Time:** {appt.get('when')}")
+            st.caption("📧 A confirmation email has been sent to your inbox. Save this appointment ID for your records.")
+
 
 elif page == "Analytics":
-    st.header("Interaction Analytics")
+    st.markdown("<h2>📊 Interaction Analytics</h2>", unsafe_allow_html=True)
+    st.markdown("Track user interactions, sentiment trends, and advisor performance.")
+    
     try:
         df = analytics_module.load_interactions()
-        st.write("Total interactions:", len(df))
-        st.dataframe(df.tail(50))
         stats = analytics_module.simple_stats(df)
-        st.write(stats)
-        st.info("Use this dashboard to watch which topics need clearer guidance or new examples.")
+        
+        st.markdown("---")
+        
+        # Key metrics
+        st.markdown("<h3>📈 Key Metrics</h3>", unsafe_allow_html=True)
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Total Interactions", len(df), delta=None)
+        with col2:
+            if stats and 'avg_sentiment' in stats:
+                st.metric("Avg Sentiment", f"{stats['avg_sentiment']:.2f}", delta="Neutral" if -0.1 < stats['avg_sentiment'] < 0.1 else "Positive" if stats['avg_sentiment'] > 0 else "Negative")
+            else:
+                st.metric("Avg Sentiment", "N/A")
+        with col3:
+            positive_count = len(df[df.get('sentiment_label', 'neutral') == 'positive']) if 'sentiment_label' in df.columns else 0
+            st.metric("Positive Responses", positive_count)
+        with col4:
+            negative_count = len(df[df.get('sentiment_label', 'neutral') == 'negative']) if 'sentiment_label' in df.columns else 0
+            st.metric("Needs Improvement", negative_count)
+        
+        st.markdown("---")
+        
+        # Detailed data
+        st.markdown("<h3>📋 Recent Interactions</h3>", unsafe_allow_html=True)
+        
+        col_count, col_display = st.columns([1, 3])
+        with col_count:
+            display_count = st.slider("Show last N interactions", min_value=10, max_value=100, value=50, step=10)
+        
+        st.dataframe(df.tail(display_count), use_container_width=True)
+        
+        st.markdown("---")
+        
+        # Statistics summary
+        if stats:
+            st.markdown("<h3>📊 Summary Statistics</h3>", unsafe_allow_html=True)
+            col_stat1, col_stat2 = st.columns(2)
+            with col_stat1:
+                st.info(f"**User Engagement:** {stats.get('total_interactions', 0)} interactions logged")
+            with col_stat2:
+                st.success(f"**Data Quality:** {stats.get('interactions_with_sentiment', 0)} interactions with sentiment analysis")
+        
+        st.markdown("---")
+        st.info("💡 **Dashboard Insights:** Use this to identify which topics need better explanation or new examples. Monitor sentiment trends to improve advisor responses.")
+        
     except Exception as e:
-        st.error("No interaction data yet or failed to load: " + str(e))
+        st.error(f"❌ No interaction data available yet or failed to load: {str(e)}")
+        st.info("Start chatting in the Chat tab to generate analytics data.")
 
 elif page == "Admin":
-    st.header("Admin Tools")
-    st.subheader("Pathway advisor")
-    field_interest = st.selectbox("Field of interest", _field_interest_options(), index=0)
-    location = st.text_input("Preferred city / state (optional)", value=saved_student_profile.get("city", ""))
-    class_level = st.selectbox("Current class stage", ["Class 10", "Class 11", "Class 12", "UG completion"], index=1)
-    student_signals = st.text_input("Optional keywords (comma separated)", value="coding, maths, biology, business")
-    st.caption(_profile_summary(saved_student_profile))
-    if st.button("Build complete pathway"):
+    st.markdown("<h2>⚙️ Admin Tools & Pathway Advisor</h2>", unsafe_allow_html=True)
+    st.markdown("Professional academic pathway planning from Class 11 through postgraduate education.")
+    
+    st.markdown("---")
+    
+    st.markdown("<h3>🎯 Pathway Advisor Configuration</h3>", unsafe_allow_html=True)
+    
+    with st.form("pathway_form", clear_on_submit=False):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("<h4>Interest & Location</h4>", unsafe_allow_html=True)
+            field_interest = st.selectbox("📚 Field of interest", _field_interest_options(), index=0)
+            location = st.text_input("📍 Preferred city / state (optional)", value=saved_student_profile.get("city", ""), placeholder="E.g., Mumbai, Delhi, Bangalore")
+        
+        with col2:
+            st.markdown("<h4>Academic Context</h4>", unsafe_allow_html=True)
+            class_level = st.selectbox("🎓 Current class stage", ["Class 10", "Class 11", "Class 12", "UG completion"], index=1)
+            student_signals = st.text_input("💡 Optional keywords (comma separated)", value="coding, maths, biology, business")
+        
+        st.markdown("---")
+        
+        st.markdown(f"**Current Profile:** {_profile_summary(saved_student_profile) or 'Update in sidebar'}")
+        
+        st.markdown("---")
+        
+        submit_pathway = st.form_submit_button("🚀 Build Complete Pathway", use_container_width=True)
+    
+    if submit_pathway:
         profile = {
             "class_level": class_level,
             "location": location,
@@ -943,55 +1292,101 @@ elif page == "Admin":
             "interests": [i.strip() for i in student_signals.split(",") if i.strip()],
         }
         recs = recommender.recommend_field_pathways(field_interest, profile)
+        
+        st.markdown("---")
+        st.markdown("<h3>🗺️ Recommended Pathways</h3>", unsafe_allow_html=True)
+        
         if not recs:
-            st.info("No pathways found in the knowledge base yet.")
-        for r in recs:
-            with st.expander(f"{r.get('field')} — complete pathway", expanded=True):
-                class_11 = r.get("class_11", {})
-                class_12 = r.get("class_12", {})
-                st.write("**Class 11 stream:**", ", ".join(class_11.get("streams", [])) or "—")
-                st.write("**Class 11 subjects:**", ", ".join(class_11.get("subjects", [])) or "—")
-                if class_11.get("focus"):
-                    st.write(class_11.get("focus"))
-
-                st.write("**Class 12 action plan:**")
-                for item in class_12.get("what_to_do", []):
-                    st.write(f"- {item}")
-                if class_12.get("entrance_exams"):
-                    st.write("**Entrance exams:**", ", ".join(class_12.get("entrance_exams", [])))
-
-                diploma_route = class_12.get("diploma_route", {})
-                if diploma_route:
-                    st.write("**Diploma route:**")
-                    st.write(f"Entry after: {diploma_route.get('available_after', '—')}")
-                    if diploma_route.get("examples"):
-                        st.write("Examples:")
-                        for item in diploma_route.get("examples", []):
-                            st.write(f"- {item}")
-                    if diploma_route.get("institutions"):
-                        st.write("Where to study:")
-                        for institution in diploma_route.get("institutions", []):
-                            st.write(f"- {institution}")
-
-                if class_12.get("undergraduate_routes"):
-                    st.write("**Undergraduate routes:**", ", ".join(class_12.get("undergraduate_routes", [])))
-                if class_12.get("undergraduate_institutions"):
-                    st.write("**Undergraduate institutions:**")
-                    for institution in class_12.get("undergraduate_institutions", []):
-                        st.write(f"- {institution}")
-
-                if class_12.get("postgraduate_routes"):
-                    st.write("**Postgraduate routes:**", ", ".join(class_12.get("postgraduate_routes", [])))
-                if class_12.get("postgraduate_institutions"):
-                    st.write("**Postgraduate institutions:**")
-                    for institution in class_12.get("postgraduate_institutions", []):
-                        st.write(f"- {institution}")
-
-                if r.get("career_direction"):
-                    st.write("**Typical career directions:**", ", ".join(r.get("career_direction", [])))
-
-        st.info("This pathway view is designed as an end-to-end adviser: it starts from Class 11 stream choice and maps the full journey to diploma, UG, and PG options.")
-
-    st.subheader("Advisor note")
-    st.info("The pathway advisor now covers stream choice, diploma options, undergraduate destinations, and postgraduate routes in one place.")
+            st.warning("⚠️ No pathways found in the knowledge base yet.")
+        else:
+            for idx, r in enumerate(recs, 1):
+                with st.expander(f"#{idx} {r.get('field')} — Complete Pathway", expanded=(idx==1)):
+                    class_11 = r.get("class_11", {})
+                    class_12 = r.get("class_12", {})
+                    
+                    # Class 11 Section
+                    st.markdown("#### 📚 Class 11 - Foundation Phase")
+                    col_11_1, col_11_2 = st.columns(2)
+                    with col_11_1:
+                        st.markdown(f"**Recommended streams:**")
+                        streams = class_11.get("streams", [])
+                        for stream in streams:
+                            st.write(f"✓ {stream}")
+                    with col_11_2:
+                        st.markdown(f"**Key subjects:**")
+                        subjects = class_11.get("subjects", [])
+                        for subject in subjects:
+                            st.write(f"• {subject}")
+                    
+                    if class_11.get("focus"):
+                        st.info(f"💡 **Focus:** {class_11.get('focus')}")
+                    
+                    st.markdown("---")
+                    
+                    # Class 12 Section
+                    st.markdown("#### 🎯 Class 12 - Specialization Phase")
+                    st.markdown(f"**Action Plan:**")
+                    for item in class_12.get("what_to_do", []):
+                        st.write(f"→ {item}")
+                    
+                    if class_12.get("entrance_exams"):
+                        st.info(f"**Entrance Exams:** {', '.join(class_12.get('entrance_exams', []))}")
+                    
+                    # Routes
+                    st.markdown("---")
+                    
+                    col_routes_1, col_routes_2, col_routes_3 = st.columns(3)
+                    
+                    # Diploma Route
+                    with col_routes_1:
+                        diploma_route = class_12.get("diploma_route", {})
+                        if diploma_route:
+                            st.markdown("#### 📖 Diploma Route")
+                            st.caption(f"Entry: {diploma_route.get('available_after', '—')}")
+                            if diploma_route.get("institutions"):
+                                st.markdown("**Top Institutions:**")
+                                for institution in diploma_route.get("institutions", [])[:3]:
+                                    st.write(f"- {institution}")
+                    
+                    # Undergraduate Route
+                    with col_routes_2:
+                        if class_12.get("undergraduate_routes"):
+                            st.markdown("#### 🎓 Undergraduate")
+                            st.caption(", ".join(class_12.get("undergraduate_routes", [])))
+                            if class_12.get("undergraduate_institutions"):
+                                st.markdown("**Top Universities:**")
+                                for institution in class_12.get("undergraduate_institutions", [])[:3]:
+                                    st.write(f"- {institution}")
+                    
+                    # Postgraduate Route
+                    with col_routes_3:
+                        if class_12.get("postgraduate_routes"):
+                            st.markdown("#### 🏆 Postgraduate")
+                            st.caption(", ".join(class_12.get("postgraduate_routes", [])))
+                            if class_12.get("postgraduate_institutions"):
+                                st.markdown("**Top Institutions:**")
+                                for institution in class_12.get("postgraduate_institutions", [])[:3]:
+                                    st.write(f"- {institution}")
+                    
+                    # Career Directions
+                    if r.get("career_direction"):
+                        st.markdown("---")
+                        st.markdown("#### 💼 Typical Career Directions")
+                        for career in r.get("career_direction", []):
+                            st.write(f"→ {career}")
+            
+            st.markdown("---")
+            st.success("✅ Pathway builder complete! Use this information to plan your academic journey.")
+    
+    st.markdown("---")
+    st.markdown("<h3>ℹ️ About This Tool</h3>", unsafe_allow_html=True)
+    st.info("""
+    **The Pathway Advisor** provides an end-to-end academic roadmap:
+    - **Class 11:** Stream selection and foundation building
+    - **Class 12:** Subject focus and entrance exam preparation  
+    - **Diploma/UG/PG:** Multiple career route options with institutions
+    - **Career:** Typical professional directions for your field
+    
+    Remember to verify current admission cycles on official institution websites.
+    """)
 
