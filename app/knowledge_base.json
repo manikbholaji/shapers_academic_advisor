@@ -66,23 +66,23 @@
   "courses": [
     {
       "code": "CBSE-10-MATH",
-      "name": "CBSE Class 10 Mathematics",
+      "name": "Class 10 Mathematics Foundation",
       "tags": ["cbse", "math", "class 10", "board exam"],
-      "description": "Algebra, geometry, trigonometry basics, statistics, and real-life problem solving aligned with CBSE Class 10 preparation.",
+      "description": "Algebra, geometry, trigonometry basics, statistics, and real-life problem solving for board-prep revision.",
       "prerequisites": []
     },
     {
       "code": "CBSE-12-PHYS",
-      "name": "CBSE Class 12 Physics",
+      "name": "Class 12 Physics Foundation",
       "tags": ["cbse", "science", "class 12", "board exam"],
-      "description": "Mechanics, electricity, optics, modern physics, and practical-based preparation for board exams.",
+      "description": "Mechanics, electricity, optics, modern physics, and practical-based revision for board exams.",
       "prerequisites": ["CBSE-10-MATH"]
     },
     {
       "code": "ICSE-10-ENG",
-      "name": "ICSE Class 10 English",
+      "name": "Class 10 English and Writing Foundation",
       "tags": ["icse", "english", "class 10", "writing"],
-      "description": "Grammar, literature, writing skills, comprehension, and language development for ICSE board study.",
+      "description": "Grammar, literature, writing skills, comprehension, and language development for board-prep revision.",
       "prerequisites": []
     },
     {

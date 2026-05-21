@@ -752,6 +752,7 @@ elif page == "Knowledge Base":
     st.caption(f"Automatically aligned to the current academic year: {academic_year}.")
     kb = json.load(open("app/knowledge_base.json", "r", encoding="utf-8"))
     kb["academic_year"] = academic_year
+    st.caption("The knowledge base now centers India-wide diploma, undergraduate, and postgraduate pathways alongside board guidance.")
     if kb.get("boards"):
         st.subheader("Indian Education Boards")
         for board in kb.get("boards", []):
@@ -760,6 +761,20 @@ elif page == "Knowledge Base":
                 st.write("**Classes:**", ", ".join(board.get("classes", [])))
                 st.write("**Focus areas:**", ", ".join(board.get("core_focus", [])))
                 st.write("**Common streams:**", ", ".join(board.get("common_streams", [])))
+    if kb.get("programs"):
+        st.subheader("India program pathways")
+        for program in kb.get("programs", []):
+            with st.expander(f"{program.get('level')} — {program.get('title')}", expanded=False):
+                st.write(f"**Field:** {program.get('field')}")
+                st.write(program.get("best_for"))
+                if program.get("entry_after"):
+                    st.caption(f"Entry after: {', '.join(program.get('entry_after'))}")
+                if program.get("institutions"):
+                    st.write("**Example institutions:**")
+                    for institution in program.get("institutions", []):
+                        st.write(f"- {institution}")
+                if program.get("note"):
+                    st.info(program.get("note"))
     regional_resources = kb.get("regional_resources", [])
     if regional_resources:
         st.subheader("Regional study tips")
@@ -771,7 +786,8 @@ elif page == "Knowledge Base":
         st.write(f"**{p.get('title')}** — {p.get('summary')}")
         if st.checkbox(f"Show details: {p.get('title')}"):
             st.write(p.get("details"))
-    st.subheader("Courses")
+    st.subheader("School foundation references")
+    st.caption("These are legacy board-prep resources kept for quick revision support.")
     for c in kb.get("courses", []):
         st.write(f"**{c.get('code')} - {c.get('name')}**")
         st.write(c.get("description"))
