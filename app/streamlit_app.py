@@ -25,7 +25,6 @@ st.set_page_config(
 # Professional custom CSS styling
 st.markdown("""
 <style>
-    /* Global styling */
     :root {
         --primary: #0f172a;
         --accent: #3b82f6;
@@ -171,6 +170,7 @@ st.markdown("""
 
 st.title("🎓 SHAPERS Academic Advisor for Indian Students")
 st.markdown("<p style='color: #64748b; font-size: 1.1rem; margin-top: -0.5rem;'>An experienced, friendly academic guide for CBSE, ICSE, State Board, and career pathways</p>", unsafe_allow_html=True)
+    # Professional custom CSS styling with full responsive design
 
 
 def _load_secrets():
