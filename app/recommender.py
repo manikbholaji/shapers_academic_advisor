@@ -1,5 +1,6 @@
 import json
 import re
+import copy
 from collections import defaultdict
 from pathlib import Path
 
@@ -75,8 +76,83 @@ def _build_pathway_prompt(field_interest, student_profile):
     )
 
 
+def _find_pathway_template(field_interest, kb=None):
+    """Return the best matching pathway template from the KB for a field interest."""
+    if kb is None:
+        kb = load_kb()
+
+    pathways = kb.get("pathways", [])
+    if not pathways:
+        return None
+
+    field = (field_interest or "").strip().lower()
+    field_terms = _tokenize_text(field)
+    best_item = None
+    best_score = -1
+
+    for pathway in pathways:
+        aliases = [pathway.get("field", ""), *pathway.get("aliases", [])]
+        alias_terms = [_tokenize_text(alias) for alias in aliases]
+        score = 0
+
+        for alias, terms in zip(aliases, alias_terms):
+            alias_l = alias.lower()
+            if field and alias_l == field:
+                score += 12
+            elif field_terms and terms and (field_terms == terms or field_terms <= terms or terms <= field_terms):
+                score += 10
+            elif field and field in alias_l:
+                score += 8
+            elif field_terms and any(term in alias_l for term in field_terms):
+                score += 4
+
+        if score > best_score:
+            best_item = pathway
+            best_score = score
+
+    return copy.deepcopy(best_item) if best_item else None
+
+
+def _merge_pathway_template(template, ai_item, field_interest, raw_response):
+    """Merge AI output into a canonical KB template so the UI always gets a complete roadmap."""
+    base = copy.deepcopy(template) if template else {}
+    ai_item = ai_item if isinstance(ai_item, dict) else {}
+
+    template_field = (base.get("field") or field_interest or "Academic pathway")
+    ai_field = ai_item.get("field")
+    if isinstance(ai_field, str) and ai_field.strip().lower() in {template_field.strip().lower(), (field_interest or "").strip().lower()}:
+        chosen_field = ai_field
+    else:
+        chosen_field = template_field
+
+    merged = {
+        "field": chosen_field,
+        "summary": ai_item.get("summary") or base.get("summary") or raw_response,
+        "class_11": ai_item.get("class_11") if isinstance(ai_item.get("class_11"), dict) else base.get("class_11", {}),
+        "class_12": ai_item.get("class_12") if isinstance(ai_item.get("class_12"), dict) else base.get("class_12", {}),
+        "career_outlook": ai_item.get("career_outlook") if isinstance(ai_item.get("career_outlook"), (list, tuple)) else (base.get("career_outlook") or base.get("class_12", {}).get("career_outlook", [])),
+        "top_institutions_by_city": ai_item.get("top_institutions_by_city") if isinstance(ai_item.get("top_institutions_by_city"), dict) else base.get("top_institutions_by_city", {}),
+    }
+
+    # Preserve any extra structured details from the KB template when the AI only returns partial output.
+    for key in ("career_direction",):
+        if key in base and key not in merged:
+            merged[key] = base.get(key)
+
+    # Fill obvious gaps from the template if the AI omitted them.
+    for key in ("class_11", "class_12", "career_outlook", "top_institutions_by_city"):
+        if not merged.get(key) and base.get(key):
+            merged[key] = base.get(key)
+
+    if not merged.get("career_outlook"):
+        merged["career_outlook"] = base.get("class_12", {}).get("career_outlook", [])
+
+    return merged
+
+
 def _recommend_field_pathways_ai(field_interest, student_profile, ai_client):
     prompt = _build_pathway_prompt(field_interest, student_profile)
+    template = _find_pathway_template(field_interest)
     messages = [
         {"role": "system", "content": "You are a helpful, practical Indian academic advisor."},
         {"role": "user", "content": prompt},
@@ -85,22 +161,23 @@ def _recommend_field_pathways_ai(field_interest, student_profile, ai_client):
     parsed = _extract_json_from_response(response)
 
     if isinstance(parsed, dict):
-        parsed.setdefault("field", field_interest)
-        parsed.setdefault("summary", response)
-        if _validate_pathway(parsed):
-            return [parsed]
+        merged = _merge_pathway_template(template, parsed, field_interest, response)
+        if _validate_pathway(merged):
+            return [merged]
         # fall through to try to normalize below
     if isinstance(parsed, list):
         normalized = []
         for item in parsed:
             if isinstance(item, dict):
-                item.setdefault("field", field_interest)
-                item.setdefault("summary", response)
-                if _validate_pathway(item):
-                    normalized.append(item)
+                merged = _merge_pathway_template(template, item, field_interest, response)
+                if _validate_pathway(merged):
+                    normalized.append(merged)
         if normalized:
             return normalized
-    # If validation failed for parsed content, return a safe fallback with the raw summary
+    # If validation failed for parsed content, return a safe fallback using the KB template when possible.
+    fallback = _merge_pathway_template(template, {}, field_interest, response)
+    if _validate_pathway(fallback):
+        return [fallback]
     return [{
         "field": field_interest or "Academic pathway",
         "summary": response,

@@ -3,6 +3,7 @@
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
+- Harden pathway recommendations by merging AI output into canonical KB pathways so Admin always gets complete class 11/12 and city-specific details.
 - Fix Streamlit deployment imports by using absolute `app.*` imports and adding a startup path guard in `app/streamlit_app.py`.
 - Improve sentiment reprocess UX with progress bar/status text and stronger Admin/Analytics status indicators.
 - Add automatic sentiment analysis when logging interactions (`analytics_module.log_interaction`).
