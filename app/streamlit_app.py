@@ -1314,6 +1314,13 @@ elif page == "Admin":
     st.markdown("<h2>⚙️ Admin Tools & Pathway Advisor</h2>", unsafe_allow_html=True)
     st.markdown("Professional academic pathway planning from Class 11 through postgraduate education.")
     
+    # Show last sentiment reprocess info for admins
+    meta = analytics_module.get_reprocess_meta()
+    if meta:
+        st.caption(f"Last sentiment reprocess: {meta.get('last_run')} — {meta.get('processed',0)} rows")
+    else:
+        st.caption("No sentiment reprocess has been run yet")
+
     st.markdown("---")
     
     st.markdown("<h3>🎯 Pathway Advisor Configuration</h3>", unsafe_allow_html=True)
