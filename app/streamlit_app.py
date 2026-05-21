@@ -1,5 +1,5 @@
 import os
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 import streamlit as st
 
@@ -16,8 +16,8 @@ import io
 from typing import Optional
 
 st.set_page_config(page_title="SHAPERS Academic Advisor", page_icon=":mortar_board:")
-st.title("SHAPERS Academic Advisor for Punjab Students")
-st.caption("An experienced, friendly academic guide for CBSE, ICSE, and Punjab board learners.")
+st.title("SHAPERS Academic Advisor for Indian Students")
+st.caption("An experienced, friendly academic guide for CBSE, ICSE, State Board, and stream-selection support.")
 
 
 def _load_secrets():
@@ -91,19 +91,19 @@ def _backend_source(provider, secrets, manual_values):
 
 def _advisor_persona():
     return (
-        "You are an experienced and creative academic advisor in India, specializing in Punjab students. "
-        "Give practical, supportive, board-aware guidance for CBSE, ICSE, and PSEB learners. "
+        "You are an experienced and creative academic advisor for Indian students. "
+        "Give practical, supportive, board-aware guidance for CBSE, ICSE, and State Board learners. "
         "Be clear, kind, and action-oriented. Prefer short steps, study plans, and exam-focused advice. "
         "When helpful, mention the Indian academic year (April to March), school attendance norms, "
-        "subject selection after Class 10, and board-specific preparation strategies."
+        "subject selection after Class 10, stream choice for Classes 11 and 12, and board-specific preparation strategies."
     )
 
 
 def _student_profile_choices():
     return {
-        "board": ["Auto", "CBSE", "ICSE", "PSEB", "State Board", "Other"],
+        "board": ["Auto", "CBSE", "ICSE", "State Board", "Other"],
         "class_level": ["Auto", "Class 1-5", "Class 6-8", "Class 9", "Class 10", "Class 11", "Class 12"],
-        "medium": ["Auto", "English", "Punjabi", "Hindi"],
+        "medium": ["Auto", "English", "Hindi", "Bilingual", "Regional"],
         "goal": ["Board exam prep", "Stream selection", "Doubt solving", "Career guidance", "Study plan", "Admission help"],
     }
 
@@ -131,13 +131,12 @@ def _profile_summary(profile):
 
 
 def _starter_prompts(profile):
-    board = profile.get("board")
     class_level = profile.get("class_level")
-    if board == "PSEB" or profile.get("medium") == "Punjabi":
+    if class_level in ("Class 11", "Class 12") or profile.get("goal") == "Stream selection":
         return [
-            "How should I prepare for Punjab board exams this year?",
-            "Suggest a weekly study plan for Class 10 board prep.",
-            "Which subjects should I focus on first for strong marks?",
+            "Help me choose between Humanities, Commerce, Medical, and Non-medical after Class 10.",
+            "What stream should I choose for Class 11 if I like biology and writing equally?",
+            "Which subjects should I focus on if I want both strong marks and future flexibility?",
         ]
     if class_level == "Class 10":
         return [
@@ -158,7 +157,7 @@ def _build_system_message(profile, academic_year):
         f"{_advisor_persona()} Current academic year: {academic_year}. "
         f"Student profile: {summary}. "
         "If the user does not specify their board or class, ask one concise follow-up before giving a detailed plan. "
-        "Tailor advice to Indian school realities and the Punjab context where relevant."
+        "Tailor advice to Indian school realities and local board context where relevant."
     )
 
 
@@ -293,6 +292,24 @@ def _format_download_name(format_choice: str):
     return f"ai_response.{ 'txt' if safe == 'text' else 'png' if safe == 'png' else 'pdf' }"
 
 
+def _appointment_time_slots():
+    return appointments.list_working_hours(start_hour=10, end_hour=18, step_minutes=30)
+
+
+def _filtered_appointment_slots(selected_date):
+    slots = _appointment_time_slots()
+    if selected_date != date.today():
+        return slots
+
+    available = []
+    now = datetime.now()
+    for slot in slots:
+        slot_time = datetime.strptime(slot, "%H:%M").time()
+        if datetime.combine(selected_date, slot_time) > now:
+            available.append(slot)
+    return available
+
+
 def _reset_conversation():
     st.session_state.messages = [{"role": "system", "content": _advisor_persona()}]
 
@@ -371,43 +388,160 @@ def generate_png_bytes(text: str, width: int = 1200, padding: int = 20) -> Optio
         from PIL import Image, ImageDraw, ImageFont
     except Exception:
         return None
-    lines = text.splitlines() or [text]
-    try:
-        font = ImageFont.load_default()
-    except Exception:
-        font = None
-    # estimate height
-    line_h = 20
-    height = padding * 2 + line_h * (len(lines) + 2)
-    img = Image.new('RGB', (width, max(height, 200)), color='white')
+    from textwrap import wrap
+
+    def _load_font(name, size, fallback_default=False):
+        try:
+            return ImageFont.truetype(name, size=size)
+        except Exception:
+            return ImageFont.load_default() if fallback_default else None
+
+    title_font = _load_font("DejaVuSans-Bold.ttf", 34, fallback_default=True)
+    subtitle_font = _load_font("DejaVuSans.ttf", 18, fallback_default=True)
+    body_font = _load_font("DejaVuSans.ttf", 22, fallback_default=True)
+
+    page_width = 1240
+    page_height = 1754
+    margin = 72
+    img = Image.new("RGB", (page_width, page_height), color="#f8fafc")
     draw = ImageDraw.Draw(img)
-    y = padding
-    for line in lines:
-        draw.text((padding, y), line, fill='black', font=font)
-        y += line_h
+
+    draw.rounded_rectangle((margin, margin, page_width - margin, margin + 150), radius=28, fill="#0f172a")
+    draw.text((margin + 36, margin + 28), "SHAPERS Academic Advisor", fill="#ffffff", font=title_font)
+    draw.text((margin + 36, margin + 86), "Formatted AI response", fill="#cbd5e1", font=subtitle_font)
+
+    content_top = margin + 190
+    draw.rounded_rectangle((margin, content_top, page_width - margin, page_height - margin), radius=28, fill="#ffffff", outline="#dbe3ef", width=2)
+
+    def wrap_line(line, max_width):
+        if not line.strip():
+            return [""]
+        words = line.split()
+        wrapped = []
+        current = ""
+        for word in words:
+            candidate = f"{current} {word}".strip()
+            bbox = draw.textbbox((0, 0), candidate, font=body_font)
+            if bbox[2] - bbox[0] <= max_width or not current:
+                current = candidate
+            else:
+                wrapped.append(current)
+                current = word
+        if current:
+            wrapped.append(current)
+        return wrapped
+
+    y = content_top + 36
+    max_text_width = page_width - (margin * 2) - 40
+    for raw_line in (text or "").splitlines() or [text or ""]:
+        if not raw_line.strip():
+            y += 14
+            continue
+        bullet_prefix = ""
+        content = raw_line.strip()
+        if content.startswith(("- ", "* ", "• ")):
+            bullet_prefix = "• "
+            content = content[2:].strip() if content[:2] in ("- ", "* ") else content[1:].strip()
+
+        available_width = max_text_width - (30 if bullet_prefix else 0)
+        wrapped_lines = wrap_line(content, available_width)
+        for line_index, wrapped_line in enumerate(wrapped_lines):
+            x = margin + 32 if bullet_prefix and line_index == 0 else margin + 62 if bullet_prefix else margin + 32
+            prefix = bullet_prefix if line_index == 0 else ""
+            draw.text((x, y), f"{prefix}{wrapped_line}", fill="#0f172a", font=body_font)
+            line_bbox = draw.textbbox((0, 0), wrapped_line or "Ag", font=body_font)
+            y += (line_bbox[3] - line_bbox[1]) + 12
+        y += 6
+        if y > page_height - margin - 60:
+            break
+
     bio = io.BytesIO()
-    img.save(bio, format='PNG')
+    img.save(bio, format="PNG")
     return bio.getvalue()
 
 
 def generate_pdf_bytes(text: str) -> Optional[bytes]:
     try:
+        from reportlab.lib import colors
+        from reportlab.lib.enums import TA_LEFT
         from reportlab.lib.pagesizes import A4
-        from reportlab.pdfgen import canvas
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import mm
+        from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
+        from xml.sax.saxutils import escape
     except Exception:
         return None
+
     bio = io.BytesIO()
-    c = canvas.Canvas(bio, pagesize=A4)
-    width, height = A4
-    y = height - 50
-    lines = text.splitlines()
-    for line in lines:
-        if y < 50:
-            c.showPage()
-            y = height - 50
-        c.drawString(40, y, line)
-        y -= 14
-    c.save()
+
+    doc = SimpleDocTemplate(
+        bio,
+        pagesize=A4,
+        leftMargin=18 * mm,
+        rightMargin=18 * mm,
+        topMargin=20 * mm,
+        bottomMargin=18 * mm,
+        title="SHAPERS Academic Advisor Response",
+        author="SHAPERS Academic Advisor",
+    )
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        "ExportTitle",
+        parent=styles["Title"],
+        fontName="Helvetica-Bold",
+        fontSize=20,
+        leading=24,
+        textColor=colors.HexColor("#0f172a"),
+        spaceAfter=8,
+        alignment=TA_LEFT,
+    )
+    subtitle_style = ParagraphStyle(
+        "ExportSubtitle",
+        parent=styles["BodyText"],
+        fontName="Helvetica",
+        fontSize=10,
+        leading=12,
+        textColor=colors.HexColor("#475569"),
+        spaceAfter=14,
+        alignment=TA_LEFT,
+    )
+    body_style = ParagraphStyle(
+        "ExportBody",
+        parent=styles["BodyText"],
+        fontName="Helvetica",
+        fontSize=11.5,
+        leading=15,
+        textColor=colors.HexColor("#111827"),
+        spaceAfter=5,
+        alignment=TA_LEFT,
+    )
+
+    story = [
+        Paragraph("SHAPERS Academic Advisor", title_style),
+        Paragraph("Formatted response for reading, sharing, and printing on A4 paper.", subtitle_style),
+    ]
+
+    for line in (text or "").splitlines() or [text or ""]:
+        clean_line = escape(line.strip())
+        if not clean_line:
+            story.append(Spacer(1, 4))
+            continue
+        if clean_line.startswith(("- ", "* ", "• ")):
+            clean_line = f"• {clean_line[2:].strip()}" if clean_line[:2] in ("- ", "* ") else clean_line
+        story.append(Paragraph(clean_line.replace("\n", "<br/>").replace("  ", " &nbsp;"), body_style))
+
+    def _add_footer(canvas, doc_obj):
+        canvas.saveState()
+        canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
+        canvas.line(doc_obj.leftMargin, 16 * mm, A4[0] - doc_obj.rightMargin, 16 * mm)
+        canvas.setFont("Helvetica", 9)
+        canvas.setFillColor(colors.HexColor("#64748b"))
+        canvas.drawString(doc_obj.leftMargin, 11 * mm, "SHAPERS Academic Advisor")
+        canvas.drawRightString(A4[0] - doc_obj.rightMargin, 11 * mm, f"Page {canvas.getPageNumber()}")
+        canvas.restoreState()
+
+    doc.build(story, onFirstPage=_add_footer, onLaterPages=_add_footer)
     bio.seek(0)
     return bio.read()
 
@@ -438,17 +572,17 @@ for field, default in {
     "goal": st.session_state.student_profile_draft.get("goal", "Board exam prep"),
     "city": st.session_state.student_profile_draft.get("city", ""),
 }.items():
-    st.session_state.setdefault(f"profile_draft_{field}", default)
+        st.session_state.setdefault(f"profile_draft_{field}", default)
 
 PROJECT_PAGES = ["Chat", "Demo", "Knowledge Base", "Book Appointment", "Analytics", "Admin"]
 
 with st.sidebar:
-    st.header("Project Tasks")
+    st.header("Navigation")
     st.caption("Go to")
     page = st.radio("", PROJECT_PAGES, label_visibility="collapsed")
     st.caption("Chat · Knowledge Base · Book Appointment · Analytics · Admin")
     st.markdown("---")
-    st.header("Quick setup")
+    st.header("AI settings")
     secrets = _load_secrets()
     provider_choice = st.selectbox(
         "AI provider",
@@ -510,16 +644,17 @@ saved_student_profile = dict(st.session_state.student_profile_saved)
 
 if page == "Chat":
     academic_year = _current_academic_year()
-    st.write("A Punjab-aware chatbot for school guidance, board exam planning, and career direction.")
+    st.write("An India-wide academic chatbot for school guidance, board exam planning, stream selection, and career direction.")
     if provider == "Mock":
         st.info("You can start chatting now. Add a key later to switch from Mock mode.")
     st.success(f"Active academic year: {academic_year}")
     st.caption(f"Active saved profile: {_profile_summary(saved_student_profile)}")
 
-    st.caption("Choose how you want the answer delivered before you submit the prompt.")
+    st.caption("Choose the answer format first, then send one focused prompt.")
 
     with st.form("prompt_composer_form", clear_on_submit=True):
-        prompt_text = st.text_area("Ask anything", placeholder="Ask for study plans, admission help, exam tips, and more...", height=120)
+        st.subheader("Compose your question")
+        prompt_text = st.text_area("Ask anything", placeholder="Ask for study plans, stream guidance, admission help, exam tips, and more...", height=120)
         response_format = st.radio(
             "Reply format",
             ["Text", "PNG", "PDF"],
@@ -599,7 +734,7 @@ if page == "Chat":
     _render_prompt_history_editor(saved_student_profile, academic_year, client)
 
     st.markdown("---")
-    st.markdown("**Tip:** Keep your board and class updated for sharper advice.")
+    st.markdown("**Tip:** Keep your board, class, and goal updated for sharper advice.")
 
 elif page == "Knowledge Base":
     academic_year = _current_academic_year()
@@ -615,12 +750,11 @@ elif page == "Knowledge Base":
                 st.write("**Classes:**", ", ".join(board.get("classes", [])))
                 st.write("**Focus areas:**", ", ".join(board.get("core_focus", [])))
                 st.write("**Common streams:**", ", ".join(board.get("common_streams", [])))
-    # Punjab district-specific resources
-    punjab_resources = kb.get("punjab_resources", [])
-    if punjab_resources and (saved_student_profile.get("board") in ("PSEB", "pseb", "Punjab") or True):
-        st.subheader("Punjab District Resources")
-        for res in punjab_resources:
-            with st.expander(res.get("district"), expanded=False):
+    regional_resources = kb.get("regional_resources", [])
+    if regional_resources:
+        st.subheader("Regional study tips")
+        for res in regional_resources:
+            with st.expander(res.get("label", "Study tip"), expanded=False):
                 st.write(res.get("tips"))
     st.subheader("Policies")
     for p in kb.get("policies", []):
@@ -634,15 +768,15 @@ elif page == "Knowledge Base":
 
 elif page == "Demo":
     st.header("Demo: Sample Prompts & Expected Answers")
-    st.caption("Quick examples to try — tailored for Punjab students (PSEB/Punjab, CBSE, ICSE). Use the button in each card to open the prompt in Chat.")
+    st.caption("Quick examples to try — tailored for Indian students across CBSE, ICSE, and State Boards. Use the button in each card to open the prompt in Chat.")
 
     academic_year = _current_academic_year()
 
     demo_cases = [
         {
-            "title": "Weekly study plan — Class 10 (Punjab board)",
-            "prompt": "Suggest a weekly study plan for Class 10 Punjab board exams, focusing on Maths and Science, including daily tasks and revision slots.",
-            "expected": "A 7-day schedule splitting topics by chapter, daily practice problems, 30-40 minute revision at day end, weekly test on Sunday, and tips to balance Punjabi/English medium study."
+            "title": "Weekly study plan — Class 10",
+            "prompt": "Suggest a weekly study plan for Class 10 board exams, focusing on Maths and Science, including daily tasks and revision slots.",
+            "expected": "A 7-day schedule splitting topics by chapter, daily practice problems, 30-40 minute revision at day end, weekly test on Sunday, and tips to balance school work with revision."
         },
         {
             "title": "Improve marks in Mathematics",
@@ -651,28 +785,28 @@ elif page == "Demo":
         },
         {
             "title": "Stream selection after Class 10",
-            "prompt": "I like biology and computers but my marks are mixed. Which stream should I pick after Class 10 in Punjab to keep options open?",
-            "expected": "Explain Science (Medical/Non-medical), Commerce with Computer Applications, tradeoffs, and suggest short-term bridge courses and subject choices in PSEB."
+            "prompt": "I like biology and computers but my marks are mixed. Which stream should I pick after Class 10 to keep options open?",
+            "expected": "Explain Science (Medical/Non-medical), Commerce, Humanities, tradeoffs, and suggest subject combinations that keep college options open."
         },
         {
-            "title": "College admission guidance — Punjab",
-            "prompt": "Which local colleges in Punjab offer good BSc Computer Science and what are the typical cutoffs and application timelines?",
-            "expected": "List a few well-known colleges (e.g., PU-affiliated colleges, GNDU departments), general cutoff ranges, application portals and typical timelines (June–Aug admissions)."
+            "title": "College admission guidance",
+            "prompt": "Which colleges offer good BSc Computer Science and what are the typical cutoffs and application timelines?",
+            "expected": "List a few well-known colleges, general cutoff ranges, application portals and typical timelines for admissions."
         },
         {
             "title": "Scholarships & exam registrations",
-            "prompt": "Tell me about common scholarships for Class 11 students in Punjab and upcoming important exam registration dates.",
-            "expected": "Summarize state scholarship schemes, eligibility basics, and common registration windows for board exams and competitive exams; recommend official sites for verification."
+            "prompt": "Tell me about common scholarships for Class 11 students and upcoming important exam registration dates.",
+            "expected": "Summarize common scholarship schemes, eligibility basics, and registration windows for board exams and competitive exams; recommend official sites for verification."
         },
     ]
 
     cols = st.columns(1)
-    lang = st.selectbox("Language / ਭਾਸ਼ਾ / भाषा", ["English", "हिन्दी", "Hinglish", "ਪੰਜਾਬੀ"], index=0)
+    lang = st.selectbox("Language / भाषा", ["English", "हिन्दी", "Hinglish", "Regional"], index=0)
     asset_map = {
         "English": "cheatsheet_en.md",
         "हिन्दी": "cheatsheet_hi.md",
         "Hinglish": "cheatsheet_hinglish.md",
-        "ਪੰਜਾਬੀ": "cheatsheet_pa.md",
+        "Regional": "cheatsheet_pa.md",
     }
     asset_path = Path(__file__).resolve().parent / "demo_assets" / asset_map.get(lang, "cheatsheet_en.md")
     try:
@@ -717,19 +851,32 @@ elif page == "Demo":
                 if st.button("Copy prompt", key=f"copy_{idx}"):
                     st.write("Prompt copied to clipboard (use your browser feature).")
     st.markdown("---")
-    st.write("Tip: Update your profile (Board, Class, City) in the sidebar — this helps the advisor tailor responses specifically for Punjab and your board.")
+    st.write("Tip: Update your profile (Board, Class, City) in the sidebar — this helps the advisor tailor responses to your board and academic goals.")
 
 elif page == "Book Appointment":
     st.header("Book an Appointment with an Advisor")
     name = st.text_input("Student name")
     email = st.text_input("Email")
-    when = st.text_input("When (ISO datetime or simple text)")
+    appointment_date = st.date_input("Appointment date", min_value=date.today(), value=date.today())
+    available_slots = _filtered_appointment_slots(appointment_date)
+    if available_slots:
+        appointment_time = st.selectbox(
+            "Appointment time (peak hours only)",
+            available_slots,
+            format_func=lambda value: datetime.strptime(value, "%H:%M").strftime("%I:%M %p"),
+        )
+        appointment_when = datetime.combine(appointment_date, datetime.strptime(appointment_time, "%H:%M").time()).isoformat(timespec="minutes")
+        st.caption(f"Selected time window: {appointment_when}")
+    else:
+        appointment_time = None
+        appointment_when = None
+        st.info("No remaining peak-hour slots are available for today. Please choose a future date.")
     notes = st.text_area("Notes (optional)", value=f"Board: {saved_student_profile.get('board', 'Auto')} | Class: {saved_student_profile.get('class_level', 'Auto')} | Goal: {saved_student_profile.get('goal', 'Board exam prep')}")
     if st.button("Book"):
-        if not name or not email or not when:
-            st.error("Please fill in your name, email, and preferred time.")
+        if not name or not email or not appointment_when:
+            st.error("Please fill in your name, email, and select a working-hour slot.")
         else:
-            appt = appointments.book_appointment(name, email, when, notes=notes)
+            appt = appointments.book_appointment(name, email, appointment_when, notes=notes)
             st.success(f"Booked appointment id {appt.get('id')} for {appt.get('when')}")
             st.caption("Your board/class context has been added to the notes for better follow-up.")
 
@@ -741,14 +888,14 @@ elif page == "Analytics":
         st.dataframe(df.tail(50))
         stats = analytics_module.simple_stats(df)
         st.write(stats)
-        st.info("Use this dashboard to watch which topics need clearer Punjab-focused guidance.")
+        st.info("Use this dashboard to watch which topics need clearer guidance or new examples.")
     except Exception as e:
         st.error("No interaction data yet or failed to load: " + str(e))
 
 elif page == "Admin":
     st.header("Admin Tools")
     st.subheader("Course Recommendations (demo)")
-    interests = st.text_input("Interests (comma separated)", value="math, science, Punjabi, programming")
+    interests = st.text_input("Interests (comma separated)", value="math, science, programming")
     completed = st.text_input("Completed courses (comma separated)")
     goals = st.text_input("Goals (short text)", value=saved_student_profile.get("goal", "Board exam prep"))
     st.caption(_profile_summary(saved_student_profile))
@@ -761,4 +908,34 @@ elif page == "Admin":
         recs = recommender.recommend_courses(profile)
         for r in recs:
             st.write(f"**{r.get('code')} - {r.get('name')}**: {r.get('description')}")
+
+    st.subheader("Stream guidance for Class 11/12")
+    stream_interests = st.text_input("Stream interests (comma separated)", value="biology, maths, coding")
+    stream_strengths = st.text_input("Stream strengths (comma separated)", value="math, writing, problem solving")
+    stream_marks = st.text_input("Subject marks (optional, e.g. maths:82, science:78, commerce:70)", value="")
+    if st.button("Suggest streams"):
+        marks = {}
+        for item in stream_marks.split(","):
+            if ":" not in item:
+                continue
+            subject, score = item.split(":", 1)
+            try:
+                marks[subject.strip().lower()] = float(score.strip())
+            except ValueError:
+                continue
+
+        stream_profile = {
+            "board": saved_student_profile.get("board", "Auto"),
+            "class_level": saved_student_profile.get("class_level", "Auto"),
+            "interests": [item.strip() for item in stream_interests.split(",") if item.strip()],
+            "strengths": [item.strip() for item in stream_strengths.split(",") if item.strip()],
+            "goals": goals,
+            "marks": marks,
+        }
+        stream_recs = recommender.recommend_streams(stream_profile)
+        for rec in stream_recs:
+            with st.expander(f"{rec.get('name')} - {rec.get('subjects')}", expanded=False):
+                st.write(rec.get("best_for"))
+                if rec.get("evidence"):
+                    st.caption(f"Matched signals: {rec.get('evidence')}")
 

@@ -37,6 +37,17 @@ def book_appointment(student_name, email, when, advisor="Advisor", notes=""):
     return appt
 
 
+def list_working_hours(start_hour=10, end_hour=18, step_minutes=30):
+    slots = []
+    current_minutes = start_hour * 60
+    end_minutes = end_hour * 60
+    while current_minutes <= end_minutes:
+        hours, minutes = divmod(current_minutes, 60)
+        slots.append(f"{hours:02d}:{minutes:02d}")
+        current_minutes += step_minutes
+    return slots
+
+
 def list_appointments():
     return _read()
 

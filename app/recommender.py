@@ -44,8 +44,8 @@ def recommend_courses(student_profile, kb=None, top_n=3):
         if board:
             if board in " ".join(tags) or board.replace(' ', '') in code.lower():
                 score += 4
-            # Treat PSEB and 'pseb' equivalently to state board tag
-            if board in ("pseb", "punjab") and any(t for t in tags if "state" in t or "pseb" in t or "punjab" in t):
+            # Treat state-board style profiles as a match for state-board content.
+            if board in ("state board", "stateboard", "regional board") and any(t for t in tags if "state" in t):
                 score += 3
         # Boost if course is targeted at the student's class level (e.g., class 10)
         if class_level:
@@ -68,6 +68,80 @@ def recommend_courses(student_profile, kb=None, top_n=3):
     # Return top_n course dicts
     ranked = sorted([c for c in courses], key=lambda x: scores.get(x.get("code"), 0), reverse=True)
     return ranked[:top_n]
+
+
+def recommend_streams(student_profile, kb=None):
+    """Suggest Class 11/12 streams based on interests, goals, and strengths."""
+    if kb is None:
+        kb = load_kb()
+
+    profiles = [
+        {
+            "name": "Science - Medical",
+            "subjects": "Biology, Chemistry, Physics",
+            "best_for": "students interested in medicine, life sciences, biotech, or allied health",
+            "signals": ["biology", "medical", "doctor", "neet", "health", "life science"],
+        },
+        {
+            "name": "Science - Non-medical",
+            "subjects": "Mathematics, Physics, Chemistry",
+            "best_for": "students who like maths, engineering, computer science, or applied problem solving",
+            "signals": ["math", "maths", "engineering", "coding", "computer", "physics", "non-medical"],
+        },
+        {
+            "name": "Commerce",
+            "subjects": "Accountancy, Business Studies, Economics",
+            "best_for": "students who are interested in business, finance, management, or entrepreneurship",
+            "signals": ["commerce", "business", "finance", "accounting", "economics", "entrepreneur"],
+        },
+        {
+            "name": "Humanities",
+            "subjects": "History, Political Science, Sociology, Psychology",
+            "best_for": "students who enjoy writing, social studies, policy, design thinking, or public service",
+            "signals": ["humanities", "arts", "history", "politics", "sociology", "psychology", "writing", "design"],
+        },
+    ]
+
+    interests = [item.lower() for item in student_profile.get("interests", [])]
+    goals = (student_profile.get("goals") or "").lower()
+    strengths = [item.lower() for item in student_profile.get("strengths", [])]
+    marks = student_profile.get("marks", {}) if isinstance(student_profile.get("marks"), dict) else {}
+
+    ranked_streams = []
+    for profile in profiles:
+        score = 0
+        evidence = []
+        for signal in profile["signals"]:
+            if any(signal in text for text in interests + strengths + [goals]):
+                score += 3
+                evidence.append(signal)
+
+        board = (student_profile.get("board") or "").lower()
+        class_level = (student_profile.get("class_level") or "").lower()
+        if "class 11" in class_level or "class 12" in class_level:
+            score += 1
+        if board in ("cbse", "icse", "state board"):
+            score += 1
+
+        if marks:
+            science_mark = marks.get("science") or marks.get("math") or marks.get("mathematics")
+            if profile["name"].startswith("Science") and isinstance(science_mark, (int, float)) and science_mark >= 75:
+                score += 2
+            if profile["name"] == "Commerce" and isinstance(marks.get("commerce"), (int, float)) and marks.get("commerce") >= 70:
+                score += 2
+
+        ranked_streams.append(
+            {
+                "name": profile["name"],
+                "subjects": profile["subjects"],
+                "best_for": profile["best_for"],
+                "score": score,
+                "evidence": ", ".join(sorted(set(evidence))) if evidence else "",
+            }
+        )
+
+    ranked_streams.sort(key=lambda item: item["score"], reverse=True)
+    return ranked_streams
 
 if __name__ == "__main__":
     demo = {"interests": ["Programming", "Python"], "completed": [], "goals": "software developer"}

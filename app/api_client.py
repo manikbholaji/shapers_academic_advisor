@@ -110,10 +110,16 @@ class AIClient:
     def _mock_reply(self, text):
         # Very small rule-based fallback for offline testing
         text = (text or "").lower()
-        if "pseb" in text or "punjab" in text or "class 10" in text or "board" in text:
+        if any(keyword in text for keyword in ["stream", "humanities", "commerce", "medical", "non-medical"]):
             return (
-                "For Punjab and board exam prep, start with the official syllabus, split chapters into weekly targets, "
-                "and revise NCERT/textbook exercises first. If you tell me your class and board, I can make a sharper study plan."
+                "For stream selection after Class 10, compare your strongest subjects, preferred learning style, and long-term goals. "
+                "Humanities suits students who enjoy writing, history, civics, or psychology; Commerce fits business, economics, and accountancy; "
+                "Medical suits biology-heavy paths; Non-medical suits maths, physics, and engineering interest. Share your marks and interests for a sharper recommendation."
+            )
+        if "class 10" in text or "board" in text or "class 11" in text or "class 12" in text:
+            return (
+                "For board exam prep, start with the official syllabus, split chapters into weekly targets, and revise textbook exercises first. "
+                "If you tell me your class and board, I can make a sharper study plan."
             )
         if "course" in text or "subject" in text or "programming" in text:
             return "Focus on strong foundations first: mathematics, science, language, and one practical skill. Share your class and board for a tailored roadmap."
@@ -121,7 +127,7 @@ class AIClient:
             return "Think about school performance, stream choice after Class 10, and skills that fit your strengths. I can suggest paths based on your goals."
         if "grading" in text or "grade" in text or "policy" in text or "attendance" in text:
             return "Check your board and school rules first. Attendance, internal assessment, and board exam prep all matter; I can explain the exact flow if you share your board."
-        return f"[Punjab advisor mode] I heard: '{text[:200]}'. Tell me your board, class, and goal, and I’ll guide you step by step."
+        return f"[Academic advisor mode] I heard: '{text[:200]}'. Tell me your board, class, and goal, and I’ll guide you step by step."
 
     def _google_reply(self, messages, api_key):
         """Call Google's Generative Language API (Gemini) via REST.

@@ -53,6 +53,9 @@ The deployed app now has a Gemini-style composer flow:
 - Students choose **Text**, **PNG**, or **PDF** before generating a response.
 - Students can edit and resubmit earlier prompts from prompt history.
 - The sidebar profile editor requires **Save profile** before the chatbot uses updated student details.
+- The admin panel includes stream guidance for Class 11/12.
+- Appointment booking uses a date picker and peak-hour time slots.
+- PNG and PDF responses are formatted for readable A4-style output.
 
 ## 4) Runtime & dependencies
 
@@ -84,5 +87,11 @@ streamlit run app/streamlit_app.py
 - Enter a prompt, pick **Text**, **PNG**, or **PDF**, and submit.
 - Use the prompt history section to edit an earlier prompt and resubmit it in place.
 - Save the student profile before testing board/class-aware responses.
+
+## 9) Verify stream guidance and booking
+
+- Open the Admin page and test the stream recommender with Class 11/12 inputs.
+- Open Book Appointment and confirm only working-hour time slots are available.
+- Generate a PNG or PDF response and check that the exported layout is clean and readable.
 
 If you want I can prepare the `git` commands and create the GitHub repo skeleton for you; you'll need to push the code from your computer or provide a GitHub token to create the repo from here.

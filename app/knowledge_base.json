@@ -28,12 +28,12 @@
       "common_streams": ["Science", "Commerce", "Arts"]
     },
     {
-      "id": "pseb",
-      "name": "PSEB (Punjab)",
+      "id": "regional_state_board",
+      "name": "Regional State Board",
       "type": "State Board",
-      "overview": "Punjab School Education Board follows the state curriculum for school education and board examinations in Punjab.",
+      "overview": "State-board students should follow the official syllabus, local assessment rules, and exam schedule issued by their board.",
       "classes": ["Primary", "Middle", "Secondary", "Senior Secondary"],
-      "core_focus": ["Punjabi language", "Punjab state syllabus", "board exam preparation", "textbook-based learning"],
+      "core_focus": ["state syllabus", "board exam preparation", "textbook-based learning", "local language support"],
       "common_streams": ["Science", "Commerce", "Arts"]
     }
   ],
@@ -94,22 +94,22 @@
     }
   ]
   ,
-  "punjab_resources": [
+  "regional_resources": [
     {
-      "district": "Ludhiana",
-      "tips": "Strong coaching and tutoring presence; focus on weekly tests, practical lab practice, and consult local CBSE/PSEB past papers. Public libraries in the city have good reference material."
+      "label": "Metro city study plan",
+      "tips": "Use the stronger coaching ecosystem for regular testing, concept revision, and timed sample papers. Keep a disciplined weekly schedule and track weak chapters."
     },
     {
-      "district": "Amritsar",
-      "tips": "Emphasise language and literature practice along with science foundation. Check for regional revision workshops before boards and plan travel to exam centres early."
+      "label": "Tier-2 city study plan",
+      "tips": "Balance school, self-study, and travel time carefully. Focus on board syllabus completion early, then use weekends for revision and doubt clearing."
     },
     {
-      "district": "Jalandhar",
-      "tips": "Known for competitive academic coaching; join local study groups for difficult chapters and prioritise sample paper practice under timed conditions."
+      "label": "Small town study plan",
+      "tips": "Rely on textbook mastery, online classes, and peer study groups. Keep notes simple, revise often, and practise sample papers under timed conditions."
     },
     {
-      "district": "Patiala",
-      "tips": "Access to several senior teachers and study circles. Maintain attendance documentation and reach out to school for supplementary materials if needed."
+      "label": "School support plan",
+      "tips": "Build regular contact with teachers, ask for extra practice material early, and keep attendance and homework records organised for board preparation."
     }
   ]
 }
