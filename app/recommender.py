@@ -143,6 +143,68 @@ def recommend_streams(student_profile, kb=None):
     ranked_streams.sort(key=lambda item: item["score"], reverse=True)
     return ranked_streams
 
+
+def recommend_program_paths(student_profile, kb=None, top_n=5):
+    """Recommend diploma, undergraduate, and postgraduate pathways in India."""
+    if kb is None:
+        kb = load_kb()
+
+    programs = kb.get("programs", [])
+    if not programs:
+        return []
+
+    interests = [item.lower() for item in student_profile.get("interests", [])]
+    goals = (student_profile.get("goals") or "").lower()
+    desired_level = (student_profile.get("level") or "").strip().lower()
+    class_level = (student_profile.get("class_level") or "").lower()
+    location = (student_profile.get("location") or student_profile.get("city") or "").lower()
+
+    ranked = []
+    for program in programs:
+        score = 0
+        haystack = " ".join([
+            program.get("level", ""),
+            program.get("field", ""),
+            program.get("title", ""),
+            program.get("best_for", ""),
+            " ".join(program.get("keywords", [])),
+            " ".join(program.get("institutions", [])),
+        ]).lower()
+
+        if desired_level and desired_level in program.get("level", "").lower():
+            score += 6
+        elif not desired_level:
+            score += 1
+
+        if any(term in haystack for term in interests):
+            score += 4
+        if any(term in haystack for term in goals.split()):
+            score += 2
+        if "class 10" in class_level and "Diploma" in program.get("level", ""):
+            score += 3
+        if "class 12" in class_level and program.get("level") == "Undergraduate":
+            score += 3
+        if "ug" in class_level or "graduat" in class_level or "post" in class_level:
+            score += 1
+        if location and any(location in institution.lower() for institution in program.get("institutions", [])):
+            score += 2
+
+        ranked.append(
+            {
+                "level": program.get("level", ""),
+                "field": program.get("field", ""),
+                "title": program.get("title", ""),
+                "best_for": program.get("best_for", ""),
+                "institutions": program.get("institutions", []),
+                "note": program.get("note", ""),
+                "entry_after": program.get("entry_after", []),
+                "score": score,
+            }
+        )
+
+    ranked.sort(key=lambda item: item["score"], reverse=True)
+    return ranked[:top_n]
+
 if __name__ == "__main__":
     demo = {"interests": ["Programming", "Python"], "completed": [], "goals": "software developer"}
     kb = load_kb()

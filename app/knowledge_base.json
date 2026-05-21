@@ -94,6 +94,121 @@
     }
   ]
   ,
+  "programs": [
+    {
+      "id": "diploma-computer-engineering",
+      "level": "Diploma",
+      "field": "Computer Engineering",
+      "title": "Diploma in Computer Engineering",
+      "best_for": "students who want a hands-on technical route after Class 10 or Class 12",
+      "entry_after": ["Class 10", "Class 12"],
+      "keywords": ["computer", "coding", "hardware", "polytechnic", "diploma"],
+      "institutions": [
+        "DSEU Polytechnic campuses, Delhi",
+        "Government Polytechnic, Mumbai",
+        "Government Polytechnic, Chandigarh",
+        "Pusa Polytechnic, Delhi"
+      ],
+      "note": "Check the current admission brochure and intake seats for the latest academic year."
+    },
+    {
+      "id": "diploma-pharmacy",
+      "level": "Diploma",
+      "field": "Pharmacy",
+      "title": "Diploma in Pharmacy (D.Pharm)",
+      "best_for": "students interested in health sciences, laboratories, and pharmacy careers",
+      "entry_after": ["Class 12"],
+      "keywords": ["pharmacy", "health", "medicine", "biology", "diploma"],
+      "institutions": [
+        "Jamia Hamdard, New Delhi",
+        "Bhagwant University, Rajasthan",
+        "Government pharmacy colleges in multiple states",
+        "JSS College of Pharmacy, Ooty"
+      ],
+      "note": "Admission rules vary by institution; verify PCI approval and seat availability before applying."
+    },
+    {
+      "id": "ug-bsc-computer-science",
+      "level": "Undergraduate",
+      "field": "B.Sc. Computer Science",
+      "title": "B.Sc. in Computer Science / Data Science",
+      "best_for": "students who want a science-based undergraduate route into software, analytics, or postgraduate study",
+      "entry_after": ["Class 12"],
+      "keywords": ["computer", "coding", "data", "science", "ug", "undergraduate"],
+      "institutions": [
+        "University of Delhi colleges such as Hansraj College and Kirori Mal College",
+        "Christ University, Bengaluru",
+        "Loyola College, Chennai",
+        "St. Xavier's College, Mumbai"
+      ],
+      "note": "Course titles and eligibility differ by college; confirm whether the college offers a B.Sc. or BCA track." 
+    },
+    {
+      "id": "ug-bcom-hons",
+      "level": "Undergraduate",
+      "field": "Commerce",
+      "title": "B.Com. / B.Com. (Hons.)",
+      "best_for": "students interested in accounting, business, banking, finance, and professional courses",
+      "entry_after": ["Class 12"],
+      "keywords": ["commerce", "accounting", "finance", "business", "ug"],
+      "institutions": [
+        "Shri Ram College of Commerce, Delhi University",
+        "Hansraj College, Delhi University",
+        "Christ University, Bengaluru",
+        "St. Xavier's College, Kolkata"
+      ],
+      "note": "Many colleges require Class 12 mathematics or strong commerce subjects for honours programs."
+    },
+    {
+      "id": "ug-ba-psychology",
+      "level": "Undergraduate",
+      "field": "Psychology / Humanities",
+      "title": "B.A. in Psychology / Humanities",
+      "best_for": "students who enjoy writing, social sciences, public policy, or psychology",
+      "entry_after": ["Class 12"],
+      "keywords": ["humanities", "arts", "psychology", "history", "political science", "ug"],
+      "institutions": [
+        "Lady Shri Ram College for Women, Delhi",
+        "Miranda House, Delhi University",
+        "Ashoka University, Haryana",
+        "Symbiosis College of Arts and Commerce, Pune"
+      ],
+      "note": "Admission may depend on merit, entrance tests, or both depending on the institution."
+    },
+    {
+      "id": "pg-mba",
+      "level": "Postgraduate",
+      "field": "Management",
+      "title": "MBA / PGDM",
+      "best_for": "graduates who want careers in management, consulting, operations, marketing, or entrepreneurship",
+      "entry_after": ["UG completion"],
+      "keywords": ["management", "business", "pg", "postgraduate", "mba", "pgdm"],
+      "institutions": [
+        "Indian Institutes of Management (IIMs)",
+        "FMS, University of Delhi",
+        "XLRI Jamshedpur",
+        "SPJIMR Mumbai"
+      ],
+      "note": "Admission usually depends on entrance tests, work-experience preferences, and interview rounds."
+    },
+    {
+      "id": "pg-msc-data-science",
+      "level": "Postgraduate",
+      "field": "Data Science / Computer Science",
+      "title": "M.Sc. in Data Science / Computer Science",
+      "best_for": "graduates aiming for analytics, research, software engineering, or higher study",
+      "entry_after": ["UG completion"],
+      "keywords": ["data", "computer", "science", "analytics", "pg", "postgraduate"],
+      "institutions": [
+        "Indian Statistical Institute, Kolkata",
+        "University of Hyderabad",
+        "University of Delhi departments",
+        "BITS Pilani"
+      ],
+      "note": "Check program specialization, entrance requirements, and department intake for the current cycle."
+    }
+  ]
+  ,
   "regional_resources": [
     {
       "label": "Metro city study plan",

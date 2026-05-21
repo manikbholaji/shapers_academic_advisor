@@ -1,6 +1,6 @@
 # SHAPERS Academic Advisor
 
-SHAPERS Academic Advisor is a Streamlit app for Indian students that provides board-aware guidance, Class 11/12 stream selection help, study planning, appointment booking, and downloadable AI-generated study cheat-sheets.
+SHAPERS Academic Advisor is a Streamlit app for Indian students that provides board-aware guidance, Class 11/12 stream selection help, diploma/undergraduate/postgraduate program recommendations, appointment booking, and downloadable AI-generated study cheat-sheets.
 
 ## Highlights
 
@@ -74,6 +74,11 @@ streamlit run app/streamlit_app.py
 - The admin panel includes a stream recommender for Class 11 and Class 12.
 - It helps compare **Humanities**, **Commerce**, **Medical**, and **Non-medical** based on interests, strengths, and marks.
 
+### Program pathways
+
+- The admin panel also recommends **Diploma**, **Undergraduate**, and **Postgraduate** pathways in India.
+- Each recommendation includes example universities and colleges plus a note to verify the current admission cycle.
+
 ### Demo page
 
 - Shows multilingual sample prompts.
@@ -95,7 +100,7 @@ streamlit run app/streamlit_app.py
 - `app/streamlit_app.py` - Streamlit UI
 - `app/api_client.py` - OpenAI / Google / Dialogflow / Mock abstraction
 - `app/knowledge_base.json` - board, policy, and regional guidance data
-- `app/recommender.py` - course recommendation helper
+- `app/recommender.py` - course and pathway recommendation helper
 - `app/appointments.py` - appointment storage
 - `app/sentiment.py` - sentiment analysis
 - `app/analytics_module.py` - logging and summary stats

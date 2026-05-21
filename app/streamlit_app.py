@@ -138,6 +138,12 @@ def _starter_prompts(profile):
             "What stream should I choose for Class 11 if I like biology and writing equally?",
             "Which subjects should I focus on if I want both strong marks and future flexibility?",
         ]
+    if profile.get("goal") == "Admission help":
+        return [
+            "Suggest diploma, undergraduate, and postgraduate options in India for a student interested in computer science.",
+            "Which universities and colleges offer B.Com., B.Sc., or MBA pathways in India?",
+            "How should I compare diploma versus degree routes after Class 10 or Class 12?",
+        ]
     if class_level == "Class 10":
         return [
             "Help me build a Class 10 board exam revision plan.",
@@ -290,6 +296,10 @@ def _generate_assistant_reply(client, saved_student_profile, academic_year, prom
 def _format_download_name(format_choice: str):
     safe = format_choice.lower().replace(" ", "_")
     return f"ai_response.{ 'txt' if safe == 'text' else 'png' if safe == 'png' else 'pdf' }"
+
+
+def _program_level_options():
+    return ["Diploma", "Undergraduate", "Postgraduate"]
 
 
 def _appointment_time_slots():
@@ -579,7 +589,7 @@ PROJECT_PAGES = ["Chat", "Demo", "Knowledge Base", "Book Appointment", "Analytic
 with st.sidebar:
     st.header("Navigation")
     st.caption("Go to")
-    page = st.radio("", PROJECT_PAGES, label_visibility="collapsed")
+    page = st.radio("Navigation", PROJECT_PAGES, label_visibility="collapsed")
     st.caption("Chat · Knowledge Base · Book Appointment · Analytics · Admin")
     st.markdown("---")
     st.header("AI settings")
@@ -789,9 +799,9 @@ elif page == "Demo":
             "expected": "Explain Science (Medical/Non-medical), Commerce, Humanities, tradeoffs, and suggest subject combinations that keep college options open."
         },
         {
-            "title": "College admission guidance",
-            "prompt": "Which colleges offer good BSc Computer Science and what are the typical cutoffs and application timelines?",
-            "expected": "List a few well-known colleges, general cutoff ranges, application portals and typical timelines for admissions."
+            "title": "Program pathway guidance",
+            "prompt": "Recommend diploma, undergraduate, and postgraduate courses in India for a student interested in computer science, and mention specific universities or colleges that currently offer them.",
+            "expected": "Compare diploma, UG, and PG routes, list example Indian institutions for each, mention eligibility, and remind the student to verify the current admission brochure and seat intake."
         },
         {
             "title": "Scholarships & exam registrations",
@@ -894,20 +904,36 @@ elif page == "Analytics":
 
 elif page == "Admin":
     st.header("Admin Tools")
-    st.subheader("Course Recommendations (demo)")
-    interests = st.text_input("Interests (comma separated)", value="math, science, programming")
-    completed = st.text_input("Completed courses (comma separated)")
-    goals = st.text_input("Goals (short text)", value=saved_student_profile.get("goal", "Board exam prep"))
+    st.subheader("India program recommendations")
+    level = st.selectbox("Desired level", _program_level_options(), index=1)
+    program_interest_label = "Field interests (comma separated)"
+    interests = st.text_input(program_interest_label, value="computer science, commerce, psychology")
+    goals = st.text_input("Goals (short text)", value=saved_student_profile.get("goal", "Admission help"))
+    location = st.text_input("Preferred city / state (optional)", value=saved_student_profile.get("city", ""))
     st.caption(_profile_summary(saved_student_profile))
-    if st.button("Recommend Courses"):
+    if st.button("Recommend programs"):
         profile = {
+            "level": level,
             "interests": [i.strip() for i in interests.split(",") if i.strip()],
-            "completed": [c.strip() for c in completed.split(",") if c.strip()],
             "goals": goals,
+            "location": location,
+            "class_level": saved_student_profile.get("class_level", "Auto"),
         }
-        recs = recommender.recommend_courses(profile)
+        recs = recommender.recommend_program_paths(profile)
+        if not recs:
+            st.info("No program pathways found in the knowledge base yet.")
         for r in recs:
-            st.write(f"**{r.get('code')} - {r.get('name')}**: {r.get('description')}")
+            with st.expander(f"{r.get('level')} - {r.get('title')}", expanded=False):
+                st.write(f"**Field:** {r.get('field')}")
+                st.write(r.get("best_for"))
+                if r.get("entry_after"):
+                    st.caption(f"Entry after: {', '.join(r.get('entry_after'))}")
+                if r.get("institutions"):
+                    st.write("**Example institutions:**")
+                    for institution in r.get("institutions", []):
+                        st.write(f"- {institution}")
+                if r.get("note"):
+                    st.info(r.get("note"))
 
     st.subheader("Stream guidance for Class 11/12")
     stream_interests = st.text_input("Stream interests (comma separated)", value="biology, maths, coding")

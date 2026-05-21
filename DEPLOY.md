@@ -54,6 +54,7 @@ The deployed app now has a Gemini-style composer flow:
 - Students can edit and resubmit earlier prompts from prompt history.
 - The sidebar profile editor requires **Save profile** before the chatbot uses updated student details.
 - The admin panel includes stream guidance for Class 11/12.
+- The admin panel also includes India-wide diploma, undergraduate, and postgraduate program recommendations with example institutions.
 - Appointment booking uses a date picker and peak-hour time slots.
 - PNG and PDF responses are formatted for readable A4-style output.
 
