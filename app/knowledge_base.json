@@ -209,6 +209,116 @@
     }
   ]
   ,
+  "pathways": [
+    {
+      "field": "Engineering / Computer Science",
+      "aliases": ["engineering", "computer science", "coding", "it", "software", "non-medical"],
+      "class_11": {
+        "streams": ["Science - Non-medical"],
+        "subjects": ["Mathematics", "Physics", "Chemistry", "English"],
+        "focus": "Build strong math and physics fundamentals, keep chemistry steady, and start coding/problem-solving practice early."
+      },
+      "class_12": {
+        "what_to_do": [
+          "Target Class 12 board score consistency in Maths, Physics, and Chemistry.",
+          "Prepare for JEE, state CETs, or institution-level entrances where relevant.",
+          "Create a project portfolio with coding, robotics, or lab work examples."
+        ],
+        "entrance_exams": ["JEE Main", "JEE Advanced", "BITSAT", "State CETs"],
+        "diploma_route": {
+          "available_after": "Class 10 or Class 12",
+          "examples": ["Diploma in Computer Engineering", "Diploma in Electronics Engineering"],
+          "institutions": ["DSEU Polytechnic campuses, Delhi", "Government Polytechnic, Mumbai", "Pusa Polytechnic, Delhi"]
+        },
+        "undergraduate_routes": ["B.Tech / B.E.", "B.Sc. Computer Science", "BCA"],
+        "undergraduate_institutions": ["IITs", "NITs", "IIITs", "University of Delhi colleges", "BITS Pilani", "Christ University, Bengaluru"],
+        "postgraduate_routes": ["M.Tech / M.E.", "M.Sc. Computer Science", "MBA after engineering"],
+        "postgraduate_institutions": ["IITs", "NITs", "Indian Statistical Institute, Kolkata", "IIMs", "FMS, University of Delhi"]
+      },
+      "career_direction": ["software engineering", "data science", "core engineering", "cybersecurity", "product management"]
+    },
+    {
+      "field": "Medical / Life Sciences",
+      "aliases": ["medical", "biology", "neet", "health", "life sciences", "doctor"],
+      "class_11": {
+        "streams": ["Science - Medical"],
+        "subjects": ["Biology", "Physics", "Chemistry", "English"],
+        "focus": "Keep biology as the main anchor, strengthen chemistry, and maintain disciplined practical and theory revision."
+      },
+      "class_12": {
+        "what_to_do": [
+          "Study NCERT line by line for Biology, Chemistry, and Physics.",
+          "Plan NEET-style practice, diagram work, and timed revision.",
+          "Shortlist medical, allied health, or research pathways early."
+        ],
+        "entrance_exams": ["NEET-UG", "AIIMS-style medical entrances", "state-level health entrance exams"],
+        "diploma_route": {
+          "available_after": "Class 12",
+          "examples": ["Diploma in Pharmacy (D.Pharm)", "Diploma in Medical Lab Technology"],
+          "institutions": ["Jamia Hamdard, New Delhi", "JSS College of Pharmacy, Ooty", "Government medical institutes in multiple states"]
+        },
+        "undergraduate_routes": ["MBBS", "BDS", "BAMS", "BHMS", "B.Sc. Nursing", "B.Pharm"],
+        "undergraduate_institutions": ["AIIMS", "JIPMER", "Government medical colleges", "Jamia Hamdard, New Delhi", "selected private deemed universities"],
+        "postgraduate_routes": ["MD / MS", "M.Pharm", "M.Sc. Biomedical Sciences", "MPH"],
+        "postgraduate_institutions": ["AIIMS", "PGIMER", "JIPMER", "National Institutes of Pharmaceutical Education and Research (NIPER)"]
+      },
+      "career_direction": ["medicine", "dentistry", "pharmacy", "nursing", "medical research", "public health"]
+    },
+    {
+      "field": "Commerce / Management",
+      "aliases": ["commerce", "business", "finance", "accounting", "economics", "management"],
+      "class_11": {
+        "streams": ["Commerce"],
+        "subjects": ["Accountancy", "Business Studies", "Economics", "Mathematics if available"],
+        "focus": "Build basics in accounts, business concepts, and economics; keep communication and spreadsheet skills strong."
+      },
+      "class_12": {
+        "what_to_do": [
+          "Prepare for board exams with strong numeracy and concept clarity.",
+          "Explore CUET, CA Foundation, CS Foundation, or B.Com-related admission routes.",
+          "Develop practical skills in MS Excel, presentation, and basic analytics."
+        ],
+        "entrance_exams": ["CUET-UG", "CA Foundation", "CS Executive Entrance", "BBA entrance tests"],
+        "diploma_route": {
+          "available_after": "Class 10 or Class 12",
+          "examples": ["Diploma in Banking and Finance", "Diploma in Retail Management"],
+          "institutions": ["Polytechnic and vocational institutes across states", "DSEU", "selected private skill universities"]
+        },
+        "undergraduate_routes": ["B.Com.", "B.Com. (Hons.)", "BBA", "BMS", "BA Economics"],
+        "undergraduate_institutions": ["SRCC", "Hansraj College", "Lady Shri Ram College", "Christ University, Bengaluru", "St. Xavier's College, Kolkata"],
+        "postgraduate_routes": ["MBA / PGDM", "M.Com.", "M.A. Economics", "MBA in Finance"],
+        "postgraduate_institutions": ["IIMs", "FMS, University of Delhi", "XLRI Jamshedpur", "SPJIMR Mumbai"]
+      },
+      "career_direction": ["accounting", "banking", "finance", "business analytics", "management", "entrepreneurship"]
+    },
+    {
+      "field": "Humanities / Psychology / Public Policy",
+      "aliases": ["humanities", "arts", "psychology", "history", "political science", "public policy", "sociology"],
+      "class_11": {
+        "streams": ["Humanities"],
+        "subjects": ["History", "Political Science", "Sociology", "Psychology", "English"],
+        "focus": "Strengthen writing, reading, analysis, and subject reasoning while exploring the careers that need communication and social understanding."
+      },
+      "class_12": {
+        "what_to_do": [
+          "Keep essays, case studies, and answer writing crisp and well structured.",
+          "Use CUET or university-specific entrances where required.",
+          "Build reading, debate, and research habits to support university applications."
+        ],
+        "entrance_exams": ["CUET-UG", "university entrance tests", "SAT/other international tests where relevant"],
+        "diploma_route": {
+          "available_after": "Class 12",
+          "examples": ["Diploma in Journalism", "Diploma in Counselling / Social Work"],
+          "institutions": ["vocational colleges", "media institutes", "selected universities and private institutes"]
+        },
+        "undergraduate_routes": ["B.A. (Hons.) Psychology", "B.A. Political Science", "B.A. Sociology", "B.A. Economics", "B.A. English"],
+        "undergraduate_institutions": ["Lady Shri Ram College", "Miranda House", "Ashoka University", "St. Xavier's College, Mumbai", "Symbiosis colleges"],
+        "postgraduate_routes": ["M.A. Psychology", "M.A. Public Policy", "M.A. International Relations", "MBA for policy/management roles"],
+        "postgraduate_institutions": ["University of Delhi departments", "TISS", "Ashoka University", "JNU", "IIMs for management transitions"]
+      },
+      "career_direction": ["psychology", "law", "public policy", "journalism", "civil services", "research", "social work"]
+    }
+  ],
   "regional_resources": [
     {
       "label": "Metro city study plan",

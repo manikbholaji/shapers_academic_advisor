@@ -205,6 +205,52 @@ def recommend_program_paths(student_profile, kb=None, top_n=5):
     ranked.sort(key=lambda item: item["score"], reverse=True)
     return ranked[:top_n]
 
+
+def recommend_field_pathways(field_interest, student_profile=None, kb=None, top_n=3):
+    """Return complete class 11 through postgraduate pathways for a field of interest."""
+    if kb is None:
+        kb = load_kb()
+
+    pathways = kb.get("pathways", [])
+    if not pathways:
+        return []
+
+    profile = student_profile or {}
+    interests = [item.lower() for item in profile.get("interests", [])]
+    location = (profile.get("location") or profile.get("city") or "").lower()
+    field = (field_interest or "").strip().lower()
+
+    ranked = []
+    for pathway in pathways:
+        aliases = [pathway.get("field", "").lower(), *[alias.lower() for alias in pathway.get("aliases", [])]]
+        haystack = " ".join(aliases + interests).lower()
+        score = 0
+        if field and any(field in alias or alias in field for alias in aliases):
+            score += 8
+        if any(term in haystack for term in interests):
+            score += 3
+        if location:
+            section_text = " ".join(
+                pathway.get("class_12", {}).get("undergraduate_institutions", [])
+                + pathway.get("class_12", {}).get("postgraduate_institutions", [])
+                + pathway.get("class_12", {}).get("diploma_route", {}).get("institutions", [])
+            ).lower()
+            if location in section_text:
+                score += 1
+
+        ranked.append(
+            {
+                "field": pathway.get("field", ""),
+                "class_11": pathway.get("class_11", {}),
+                "class_12": pathway.get("class_12", {}),
+                "career_direction": pathway.get("career_direction", []),
+                "score": score,
+            }
+        )
+
+    ranked.sort(key=lambda item: item["score"], reverse=True)
+    return ranked[:top_n]
+
 if __name__ == "__main__":
     demo = {"interests": ["Programming", "Python"], "completed": [], "goals": "software developer"}
     kb = load_kb()

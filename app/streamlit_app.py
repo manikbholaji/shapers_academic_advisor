@@ -302,6 +302,15 @@ def _program_level_options():
     return ["Diploma", "Undergraduate", "Postgraduate"]
 
 
+def _field_interest_options():
+    return [
+        "Engineering / Computer Science",
+        "Medical / Life Sciences",
+        "Commerce / Management",
+        "Humanities / Psychology / Public Policy",
+    ]
+
+
 def _appointment_time_slots():
     return appointments.list_working_hours(start_hour=10, end_hour=18, step_minutes=30)
 
@@ -920,36 +929,68 @@ elif page == "Analytics":
 
 elif page == "Admin":
     st.header("Admin Tools")
-    st.subheader("India program recommendations")
-    level = st.selectbox("Desired level", _program_level_options(), index=1)
-    program_interest_label = "Field interests (comma separated)"
-    interests = st.text_input(program_interest_label, value="computer science, commerce, psychology")
-    goals = st.text_input("Goals (short text)", value=saved_student_profile.get("goal", "Admission help"))
+    st.subheader("Pathway advisor")
+    field_interest = st.selectbox("Field of interest", _field_interest_options(), index=0)
     location = st.text_input("Preferred city / state (optional)", value=saved_student_profile.get("city", ""))
+    class_level = st.selectbox("Current class stage", ["Class 10", "Class 11", "Class 12", "UG completion"], index=1)
+    student_signals = st.text_input("Optional keywords (comma separated)", value="coding, maths, biology, business")
     st.caption(_profile_summary(saved_student_profile))
-    if st.button("Recommend programs"):
+    if st.button("Build complete pathway"):
         profile = {
-            "level": level,
-            "interests": [i.strip() for i in interests.split(",") if i.strip()],
-            "goals": goals,
+            "class_level": class_level,
             "location": location,
-            "class_level": saved_student_profile.get("class_level", "Auto"),
+            "city": location,
+            "interests": [i.strip() for i in student_signals.split(",") if i.strip()],
         }
-        recs = recommender.recommend_program_paths(profile)
+        recs = recommender.recommend_field_pathways(field_interest, profile)
         if not recs:
-            st.info("No program pathways found in the knowledge base yet.")
+            st.info("No pathways found in the knowledge base yet.")
         for r in recs:
-            with st.expander(f"{r.get('level')} - {r.get('title')}", expanded=False):
-                st.write(f"**Field:** {r.get('field')}")
-                st.write(r.get("best_for"))
-                if r.get("entry_after"):
-                    st.caption(f"Entry after: {', '.join(r.get('entry_after'))}")
-                if r.get("institutions"):
-                    st.write("**Example institutions:**")
-                    for institution in r.get("institutions", []):
+            with st.expander(f"{r.get('field')} — complete pathway", expanded=True):
+                class_11 = r.get("class_11", {})
+                class_12 = r.get("class_12", {})
+                st.write("**Class 11 stream:**", ", ".join(class_11.get("streams", [])) or "—")
+                st.write("**Class 11 subjects:**", ", ".join(class_11.get("subjects", [])) or "—")
+                if class_11.get("focus"):
+                    st.write(class_11.get("focus"))
+
+                st.write("**Class 12 action plan:**")
+                for item in class_12.get("what_to_do", []):
+                    st.write(f"- {item}")
+                if class_12.get("entrance_exams"):
+                    st.write("**Entrance exams:**", ", ".join(class_12.get("entrance_exams", [])))
+
+                diploma_route = class_12.get("diploma_route", {})
+                if diploma_route:
+                    st.write("**Diploma route:**")
+                    st.write(f"Entry after: {diploma_route.get('available_after', '—')}")
+                    if diploma_route.get("examples"):
+                        st.write("Examples:")
+                        for item in diploma_route.get("examples", []):
+                            st.write(f"- {item}")
+                    if diploma_route.get("institutions"):
+                        st.write("Where to study:")
+                        for institution in diploma_route.get("institutions", []):
+                            st.write(f"- {institution}")
+
+                if class_12.get("undergraduate_routes"):
+                    st.write("**Undergraduate routes:**", ", ".join(class_12.get("undergraduate_routes", [])))
+                if class_12.get("undergraduate_institutions"):
+                    st.write("**Undergraduate institutions:**")
+                    for institution in class_12.get("undergraduate_institutions", []):
                         st.write(f"- {institution}")
-                if r.get("note"):
-                    st.info(r.get("note"))
+
+                if class_12.get("postgraduate_routes"):
+                    st.write("**Postgraduate routes:**", ", ".join(class_12.get("postgraduate_routes", [])))
+                if class_12.get("postgraduate_institutions"):
+                    st.write("**Postgraduate institutions:**")
+                    for institution in class_12.get("postgraduate_institutions", []):
+                        st.write(f"- {institution}")
+
+                if r.get("career_direction"):
+                    st.write("**Typical career directions:**", ", ".join(r.get("career_direction", [])))
+
+        st.info("This pathway view is designed as an end-to-end adviser: it starts from Class 11 stream choice and maps the full journey to diploma, UG, and PG options.")
 
     st.subheader("Stream guidance for Class 11/12")
     stream_interests = st.text_input("Stream interests (comma separated)", value="biology, maths, coding")
