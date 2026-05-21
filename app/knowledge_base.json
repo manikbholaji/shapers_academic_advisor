@@ -214,6 +214,7 @@
       "field": "Engineering / Computer Science",
       "aliases": ["engineering", "computer science", "coding", "it", "software", "non-medical"],
       "class_11": {
+        "decision": "For engineering, choose Science - Non-medical in Class 11 rather than medical, commerce, or humanities.",
         "streams": ["Science - Non-medical"],
         "subjects": ["Mathematics", "Physics", "Chemistry", "English"],
         "focus": "Build strong math and physics fundamentals, keep chemistry steady, and start coding/problem-solving practice early."
@@ -225,6 +226,7 @@
           "Create a project portfolio with coding, robotics, or lab work examples."
         ],
         "entrance_exams": ["JEE Main", "JEE Advanced", "BITSAT", "State CETs"],
+        "specialization_tracks": ["Computer Science Engineering", "Electronics & Communication Engineering", "Mechanical Engineering", "Civil Engineering", "Electrical Engineering", "Chemical Engineering", "Aerospace Engineering", "Biomedical Engineering"],
         "diploma_route": {
           "available_after": "Class 10 or Class 12",
           "examples": ["Diploma in Computer Engineering", "Diploma in Electronics Engineering"],
@@ -233,7 +235,26 @@
         "undergraduate_routes": ["B.Tech / B.E.", "B.Sc. Computer Science", "BCA"],
         "undergraduate_institutions": ["IITs", "NITs", "IIITs", "University of Delhi colleges", "BITS Pilani", "Christ University, Bengaluru"],
         "postgraduate_routes": ["M.Tech / M.E.", "M.Sc. Computer Science", "MBA after engineering"],
-        "postgraduate_institutions": ["IITs", "NITs", "Indian Statistical Institute, Kolkata", "IIMs", "FMS, University of Delhi"]
+        "postgraduate_institutions": ["IITs", "NITs", "Indian Statistical Institute, Kolkata", "IIMs", "FMS, University of Delhi"],
+        "top_institutions_by_city": {
+          "ludhiana": {
+            "diploma": ["Government Polytechnic, Ludhiana", "Punjab Polytechnic, Jalandhar (near Ludhiana)", "Baba Banda Singh Bahadur Engineering College, Fatehgarh Sahib (near Ludhiana)"],
+            "undergraduate": ["Lovely Professional University, Phagwara (near Ludhiana)", "Punjab Engineering College, Chandigarh (near Ludhiana)", "Baba Banda Singh Bahadur Engineering College, Fatehgarh Sahib"],
+            "postgraduate": ["Lovely Professional University, Phagwara", "Punjab Engineering College, Chandigarh", "Thapar Institute of Engineering and Technology, Patiala"]
+          }
+        },
+        "avg_fees": {
+          "diploma": "₹40,000 - ₹70,000 per year",
+          "undergraduate": "₹1,50,000 - ₹4,00,000 per year for private colleges; ₹80,000 - ₹2,00,000 for good state/university colleges",
+          "postgraduate": "₹1,50,000 - ₹4,00,000 per year depending on institute and specialization"
+        },
+        "salary_overview": "Engineering careers in 2026-27 typically begin at ₹30,000 - ₹60,000 per month for fresh graduates, with strong growth into ₹1,00,000 - ₹1,50,000+ for experienced engineers and ₹2,00,000+ for top roles.",
+        "career_outlook": [
+          {"role": "Software Engineer / Developer", "salary": "₹35,000 - ₹75,000 per month starting"},
+          {"role": "Core Engineer (Mechanical / Civil / Electrical)", "salary": "₹30,000 - ₹65,000 per month starting"},
+          {"role": "Data Scientist / AI Engineer", "salary": "₹40,000 - ₹85,000 per month starting"},
+          {"role": "Product Manager / Tech Lead", "salary": "₹80,000 - ₹2,00,000 per month with experience"}
+        ]
       },
       "career_direction": ["software engineering", "data science", "core engineering", "cybersecurity", "product management"]
     },
@@ -241,6 +262,7 @@
       "field": "Medical / Life Sciences",
       "aliases": ["medical", "biology", "neet", "health", "life sciences", "doctor"],
       "class_11": {
+        "decision": "For medical pathways, choose Science - Medical in Class 11; avoid non-medical, commerce, or humanities if MBBS/BDS is your goal.",
         "streams": ["Science - Medical"],
         "subjects": ["Biology", "Physics", "Chemistry", "English"],
         "focus": "Keep biology as the main anchor, strengthen chemistry, and maintain disciplined practical and theory revision."
@@ -252,6 +274,7 @@
           "Shortlist medical, allied health, or research pathways early."
         ],
         "entrance_exams": ["NEET-UG", "AIIMS-style medical entrances", "state-level health entrance exams"],
+        "specialization_tracks": ["MBBS", "BDS", "BAMS", "BHMS", "B.Pharm", "B.Sc. Nursing"],
         "diploma_route": {
           "available_after": "Class 12",
           "examples": ["Diploma in Pharmacy (D.Pharm)", "Diploma in Medical Lab Technology"],
@@ -260,7 +283,26 @@
         "undergraduate_routes": ["MBBS", "BDS", "BAMS", "BHMS", "B.Sc. Nursing", "B.Pharm"],
         "undergraduate_institutions": ["AIIMS", "JIPMER", "Government medical colleges", "Jamia Hamdard, New Delhi", "selected private deemed universities"],
         "postgraduate_routes": ["MD / MS", "M.Pharm", "M.Sc. Biomedical Sciences", "MPH"],
-        "postgraduate_institutions": ["AIIMS", "PGIMER", "JIPMER", "National Institutes of Pharmaceutical Education and Research (NIPER)"]
+        "postgraduate_institutions": ["AIIMS", "PGIMER", "JIPMER", "NIPER"],
+        "top_institutions_by_city": {
+          "ludhiana": {
+            "diploma": ["Dayanand Medical College & Hospital, Ludhiana (DPT, BPT allied health)", "Government Medical College, Patiala (near Ludhiana)", "Christian Medical College, Ludhiana campus"],
+            "undergraduate": ["Dayanand Medical College & Hospital, Ludhiana", "Government Medical College, Patiala", "Sri Guru Ram Das Institute of Medical Sciences & Research, Amritsar"],
+            "postgraduate": ["Dayanand Medical College & Hospital, Ludhiana", "Government Medical College, Patiala", "PGIMER, Chandigarh"]
+          }
+        },
+        "avg_fees": {
+          "diploma": "₹60,000 - ₹1,50,000 per year",
+          "undergraduate": "₹2,00,000 - ₹7,00,000 per year for private medical colleges; ₹50,000 - ₹3,00,000 for government institutions",
+          "postgraduate": "₹3,00,000 - ₹12,00,000 per year depending on specialization and institute"
+        },
+        "salary_overview": "Medical and allied health careers in 2026-27 typically start at ₹40,000 - ₹90,000 per month for fresh graduates, with specialist doctors and consultants earning ₹1,50,000+ per month.",
+        "career_outlook": [
+          {"role": "Doctor (MBBS)", "salary": "₹60,000 - ₹1,20,000 per month starting"},
+          {"role": "Dentist (BDS)", "salary": "₹45,000 - ₹90,000 per month starting"},
+          {"role": "Clinical Research / Public Health", "salary": "₹35,000 - ₹70,000 per month starting"},
+          {"role": "Pharmacist / Medical Lab Scientist", "salary": "₹35,000 - ₹75,000 per month starting"}
+        ]
       },
       "career_direction": ["medicine", "dentistry", "pharmacy", "nursing", "medical research", "public health"]
     },
@@ -268,6 +310,7 @@
       "field": "Commerce / Management",
       "aliases": ["commerce", "business", "finance", "accounting", "economics", "management"],
       "class_11": {
+        "decision": "For commerce and management, choose Commerce in Class 11 with Accountancy, Business Studies, Economics, and optional Mathematics if possible.",
         "streams": ["Commerce"],
         "subjects": ["Accountancy", "Business Studies", "Economics", "Mathematics if available"],
         "focus": "Build basics in accounts, business concepts, and economics; keep communication and spreadsheet skills strong."
@@ -279,6 +322,7 @@
           "Develop practical skills in MS Excel, presentation, and basic analytics."
         ],
         "entrance_exams": ["CUET-UG", "CA Foundation", "CS Executive Entrance", "BBA entrance tests"],
+        "specialization_tracks": ["Accounting", "Finance", "Business Analytics", "Marketing", "Human Resources", "Economics"],
         "diploma_route": {
           "available_after": "Class 10 or Class 12",
           "examples": ["Diploma in Banking and Finance", "Diploma in Retail Management"],
@@ -287,7 +331,26 @@
         "undergraduate_routes": ["B.Com.", "B.Com. (Hons.)", "BBA", "BMS", "BA Economics"],
         "undergraduate_institutions": ["SRCC", "Hansraj College", "Lady Shri Ram College", "Christ University, Bengaluru", "St. Xavier's College, Kolkata"],
         "postgraduate_routes": ["MBA / PGDM", "M.Com.", "M.A. Economics", "MBA in Finance"],
-        "postgraduate_institutions": ["IIMs", "FMS, University of Delhi", "XLRI Jamshedpur", "SPJIMR Mumbai"]
+        "postgraduate_institutions": ["IIMs", "FMS, University of Delhi", "XLRI Jamshedpur", "SPJIMR Mumbai"],
+        "top_institutions_by_city": {
+          "ludhiana": {
+            "diploma": ["Government Polytechnic, Ludhiana", "Punjabi University Regional Centre*, Ludhiana"],
+            "undergraduate": ["Lovely Professional University, Phagwara (near Ludhiana)", "Chandigarh University (near Ludhiana)", "Punjab University regional colleges"],
+            "postgraduate": ["Lovely Professional University, Phagwara", "Chandigarh University", "Punjab University, Chandigarh"]
+          }
+        },
+        "avg_fees": {
+          "diploma": "₹30,000 - ₹80,000 per year",
+          "undergraduate": "₹1,00,000 - ₹3,50,000 per year for private colleges; ₹60,000 - ₹1,50,000 for strong public colleges",
+          "postgraduate": "₹1,50,000 - ₹6,00,000 per year depending on program and institute"
+        },
+        "salary_overview": "Commerce and management careers in 2026-27 generally start at ₹30,000 - ₹55,000 per month, with strong performers in finance/consulting reaching ₹80,000+ early on.",
+        "career_outlook": [
+          {"role": "Accountant / Auditor", "salary": "₹28,000 - ₹50,000 per month starting"},
+          {"role": "Financial Analyst / Investment Analyst", "salary": "₹35,000 - ₹65,000 per month starting"},
+          {"role": "Management Trainee / Business Analyst", "salary": "₹30,000 - ₹60,000 per month starting"},
+          {"role": "Consulting / Corporate Finance", "salary": "₹60,000 - ₹1,20,000 per month with experience"}
+        ]
       },
       "career_direction": ["accounting", "banking", "finance", "business analytics", "management", "entrepreneurship"]
     },
@@ -295,6 +358,7 @@
       "field": "Humanities / Psychology / Public Policy",
       "aliases": ["humanities", "arts", "psychology", "history", "political science", "public policy", "sociology"],
       "class_11": {
+        "decision": "For Humanities, choose Humanities in Class 11 and avoid Science or Commerce if you want strong psychology/public policy options.",
         "streams": ["Humanities"],
         "subjects": ["History", "Political Science", "Sociology", "Psychology", "English"],
         "focus": "Strengthen writing, reading, analysis, and subject reasoning while exploring the careers that need communication and social understanding."
@@ -306,6 +370,7 @@
           "Build reading, debate, and research habits to support university applications."
         ],
         "entrance_exams": ["CUET-UG", "university entrance tests", "SAT/other international tests where relevant"],
+        "specialization_tracks": ["Psychology", "Public Policy", "Sociology", "Law", "Journalism", "Social Work"],
         "diploma_route": {
           "available_after": "Class 12",
           "examples": ["Diploma in Journalism", "Diploma in Counselling / Social Work"],
@@ -314,7 +379,26 @@
         "undergraduate_routes": ["B.A. (Hons.) Psychology", "B.A. Political Science", "B.A. Sociology", "B.A. Economics", "B.A. English"],
         "undergraduate_institutions": ["Lady Shri Ram College", "Miranda House", "Ashoka University", "St. Xavier's College, Mumbai", "Symbiosis colleges"],
         "postgraduate_routes": ["M.A. Psychology", "M.A. Public Policy", "M.A. International Relations", "MBA for policy/management roles"],
-        "postgraduate_institutions": ["University of Delhi departments", "TISS", "Ashoka University", "JNU", "IIMs for management transitions"]
+        "postgraduate_institutions": ["University of Delhi departments", "TISS", "Ashoka University", "JNU", "IIMs for management transitions"],
+        "top_institutions_by_city": {
+          "ludhiana": {
+            "diploma": ["Lovely Professional University, Phagwara (humantities diplomas)", "Chandigarh University (arts/social science programs)", "DAV College, Jalandhar (near Ludhiana)"],
+            "undergraduate": ["Lovely Professional University, Phagwara", "Chandigarh University", "Punjab University regional colleges"],
+            "postgraduate": ["Lovely Professional University, Phagwara", "Chandigarh University", "Panjab University, Chandigarh"]
+          }
+        },
+        "avg_fees": {
+          "diploma": "₹25,000 - ₹70,000 per year",
+          "undergraduate": "₹80,000 - ₹2,50,000 per year for private colleges; ₹40,000 - ₹1,00,000 for strong public colleges",
+          "postgraduate": "₹70,000 - ₹2,50,000 per year depending on program and institute"
+        },
+        "salary_overview": "Humanities careers in 2026-27 generally start at ₹25,000 - ₹50,000 per month for entry-level roles, rising to ₹60,000 - ₹1,20,000+ in policy, research, media, or analytics jobs.",
+        "career_outlook": [
+          {"role": "Research Analyst / Policy Analyst", "salary": "₹35,000 - ₹70,000 per month starting"},
+          {"role": "Journalist / Content Strategist", "salary": "₹25,000 - ₹50,000 per month starting"},
+          {"role": "Civil Services / Public Policy", "salary": "₹50,000 - ₹1,10,000 per month with experience"},
+          {"role": "Clinical Psychologist / Counsellor", "salary": "₹30,000 - ₹60,000 per month starting"}
+        ]
       },
       "career_direction": ["psychology", "law", "public policy", "journalism", "civil services", "research", "social work"]
     }

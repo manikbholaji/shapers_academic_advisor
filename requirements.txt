@@ -8,3 +8,4 @@ google-auth
 requests
 Pillow
 reportlab
+playwright

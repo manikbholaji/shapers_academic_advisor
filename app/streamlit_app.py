@@ -867,21 +867,33 @@ if page == "Chat":
             reply = _generate_assistant_reply(client, saved_student_profile, academic_year, prompt_text.strip(), st.session_state.messages[1:-1])
         if response_format == "Text":
             st.session_state.messages.append({"role": "assistant", "content": reply})
-            st.session_state.latest_export_bytes = None
+            st.session_state.latest_export_bytes = reply.encode("utf-8")
             st.session_state.latest_export_format = "text"
             st.session_state.latest_export_name = "ai_response.txt"
         elif response_format == "PNG":
             png_bytes = generate_png_bytes(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
-            st.session_state.latest_export_bytes = png_bytes
-            st.session_state.latest_export_format = "png"
-            st.session_state.latest_export_name = _format_download_name("PNG")
+            if png_bytes:
+                st.session_state.latest_export_bytes = png_bytes
+                st.session_state.latest_export_format = "png"
+                st.session_state.latest_export_name = _format_download_name("PNG")
+            else:
+                st.session_state.latest_export_bytes = reply.encode("utf-8")
+                st.session_state.latest_export_format = "text"
+                st.session_state.latest_export_name = "ai_response.txt"
+                st.warning("PNG generation is unavailable. A text download is ready instead.")
         else:
             pdf_bytes = generate_pdf_bytes(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
-            st.session_state.latest_export_bytes = pdf_bytes
-            st.session_state.latest_export_format = "pdf"
-            st.session_state.latest_export_name = _format_download_name("PDF")
+            if pdf_bytes:
+                st.session_state.latest_export_bytes = pdf_bytes
+                st.session_state.latest_export_format = "pdf"
+                st.session_state.latest_export_name = _format_download_name("PDF")
+            else:
+                st.session_state.latest_export_bytes = reply.encode("utf-8")
+                st.session_state.latest_export_format = "text"
+                st.session_state.latest_export_name = "ai_response.txt"
+                st.warning("PDF generation is unavailable. A text download is ready instead.")
 
         s = sentiment.analyze_sentiment(prompt_text.strip())
         analytics_module.log_interaction(user="anonymous", role="user", message=prompt_text.strip(), sentiment_label=s["label"], compound=s["compound"])
@@ -903,6 +915,9 @@ if page == "Chat":
                             *st.session_state.messages[1:],
                         ])
                     st.session_state.messages.append({"role": "assistant", "content": reply})
+                    st.session_state.latest_export_bytes = reply.encode("utf-8")
+                    st.session_state.latest_export_format = "text"
+                    st.session_state.latest_export_name = "ai_response.txt"
                     s = sentiment.analyze_sentiment(prompt)
                     analytics_module.log_interaction(user="anonymous", role="user", message=prompt, sentiment_label=s["label"], compound=s["compound"])
                     analytics_module.log_interaction(user="anonymous", role="assistant", message=reply, sentiment_label="", compound=0.0)
@@ -1132,6 +1147,9 @@ elif page == "Demo":
                             *st.session_state.messages[1:],
                         ])
                     st.session_state.messages.append({"role": "assistant", "content": reply})
+                    st.session_state.latest_export_bytes = reply.encode("utf-8")
+                    st.session_state.latest_export_format = "text"
+                    st.session_state.latest_export_name = "ai_response.txt"
                     st.success("✅ Sent to Chat! Switch to Chat tab to view.")
     
     st.markdown("---")
@@ -1236,6 +1254,14 @@ elif page == "Analytics":
             display_count = st.slider("Show last N interactions", min_value=10, max_value=100, value=50, step=10)
         
         st.dataframe(df.tail(display_count), use_container_width=True)
+
+        # Provide an explicit CSV download button to avoid toolbar interception issues
+        try:
+            if not df.empty:
+                csv_bytes = df.tail(display_count).to_csv(index=False).encode("utf-8")
+                st.download_button("⬇️ Download interactions CSV", data=csv_bytes, file_name="interactions.csv", mime="text/csv", use_container_width=True)
+        except Exception:
+            pass
         
         st.markdown("---")
         
@@ -1295,6 +1321,11 @@ elif page == "Admin":
         
         st.markdown("---")
         st.markdown("<h3>🗺️ Recommended Pathways</h3>", unsafe_allow_html=True)
+        st.info(
+            f"**Personalized for:** {class_level} learner"
+            + (f" | Preferred location: {location}" if location else "")
+            + (f" | Keywords: {', '.join(profile['interests'])}" if profile['interests'] else "")
+        )
         
         if not recs:
             st.warning("⚠️ No pathways found in the knowledge base yet.")
@@ -1303,7 +1334,60 @@ elif page == "Admin":
                 with st.expander(f"#{idx} {r.get('field')} — Complete Pathway", expanded=(idx==1)):
                     class_11 = r.get("class_11", {})
                     class_12 = r.get("class_12", {})
-                    
+                    diploma_route = class_12.get("diploma_route", {})
+
+                    if location:
+                        normalized_location = location.lower().strip()
+                        city_map = {k.lower(): v for k, v in r.get("class_12", {}).get("top_institutions_by_city", {}).items()}
+                        city_details = city_map.get(normalized_location)
+                        if not city_details:
+                            for key, details in city_map.items():
+                                if key in normalized_location or normalized_location in key:
+                                    city_details = details
+                                    break
+                        if city_details:
+                            st.markdown(f"#### 🏙️ Top institutions near {location.title()}")
+                            if city_details.get("diploma"):
+                                st.markdown("**Diploma / Polytechnic:**")
+                                for inst in city_details["diploma"]:
+                                    st.write(f"- {inst}")
+                            if city_details.get("undergraduate"):
+                                st.markdown("**Undergraduate:**")
+                                for inst in city_details["undergraduate"]:
+                                    st.write(f"- {inst}")
+                            if city_details.get("postgraduate"):
+                                st.markdown("**Postgraduate:**")
+                                for inst in city_details["postgraduate"]:
+                                    st.write(f"- {inst}")
+                            st.markdown("---")
+                        else:
+                            all_institutions = list(dict.fromkeys(
+                                diploma_route.get("institutions", [])
+                                + class_12.get("undergraduate_institutions", [])
+                                + class_12.get("postgraduate_institutions", [])
+                            ))
+                            matched_institutions = [inst for inst in all_institutions if normalized_location in inst.lower()]
+                            if matched_institutions:
+                                st.info(f"🏙️ Institutions matching your preferred city/state ({location}):")
+                                for inst in matched_institutions:
+                                    st.write(f"- {inst}")
+                            else:
+                                st.info(f"🏙️ No exact local institution list found for '{location}', so here are top national institutions for this field:")
+                                for inst in all_institutions[:5]:
+                                    st.write(f"- {inst}")
+
+                    if r.get("class_11", {}).get("decision"):
+                        st.success(f"🧭 Class 11 choice guidance: {r['class_11']['decision']}")
+
+                    if class_level == "Class 10":
+                        st.info(f"📌 You are in Class 10: focus on Class 11 stream selection and early preparation for your chosen {field_interest} pathway.")
+                    elif class_level == "Class 11":
+                        st.info(f"📌 You are in Class 11: concentrate on building the right foundation for {field_interest} and keep your undergraduate options open.")
+                    elif class_level == "Class 12":
+                        st.info(f"📌 You are in Class 12: start university entrance preparation and review undergraduate options for {field_interest}.")
+                    elif class_level == "UG completion":
+                        st.info(f"📌 You are completing UG: prioritize postgraduate programs and career progression paths for {field_interest}.")
+
                     # Class 11 Section
                     st.markdown("#### 📚 Class 11 - Foundation Phase")
                     col_11_1, col_11_2 = st.columns(2)
@@ -1343,12 +1427,17 @@ elif page == "Admin":
                         if diploma_route:
                             st.markdown("#### 📖 Diploma Route")
                             st.caption(f"Entry: {diploma_route.get('available_after', '—')}")
+                            if diploma_route.get("examples"):
+                                st.markdown("**Diploma programs:**")
+                                for example in diploma_route.get("examples", []):
+                                    st.write(f"- {example}")
                             if diploma_route.get("institutions"):
                                 st.markdown("**Top Institutions:**")
                                 for institution in diploma_route.get("institutions", [])[:3]:
                                     st.write(f"- {institution}")
-                    
-                    # Undergraduate Route
+                        if class_level in ("Class 10", "Class 11"):
+                            st.success("This diploma route is a strong option for your current stage.")
+
                     with col_routes_2:
                         if class_12.get("undergraduate_routes"):
                             st.markdown("#### 🎓 Undergraduate")
@@ -1357,8 +1446,18 @@ elif page == "Admin":
                                 st.markdown("**Top Universities:**")
                                 for institution in class_12.get("undergraduate_institutions", [])[:3]:
                                     st.write(f"- {institution}")
-                    
-                    # Postgraduate Route
+                            if class_12.get("specialization_tracks"):
+                                st.markdown("**Engineering Specializations to consider:**")
+                                for track in class_12.get("specialization_tracks", []):
+                                    st.write(f"- {track}")
+                            if class_12.get("avg_fees"):
+                                st.markdown("**Average fees estimates:**")
+                                for route_name, fee in class_12.get("avg_fees", {}).items():
+                                    if route_name != "postgraduate":
+                                        st.write(f"- {route_name.title()}: {fee}")
+                            if class_level == "Class 12":
+                                st.success("This undergraduate route is most relevant for your current stage.")
+
                     with col_routes_3:
                         if class_12.get("postgraduate_routes"):
                             st.markdown("#### 🏆 Postgraduate")
@@ -1367,11 +1466,25 @@ elif page == "Admin":
                                 st.markdown("**Top Institutions:**")
                                 for institution in class_12.get("postgraduate_institutions", [])[:3]:
                                     st.write(f"- {institution}")
-                    
-                    # Career Directions
-                    if r.get("career_direction"):
+                            if class_12.get("avg_fees"):
+                                post_fees = class_12.get("avg_fees", {}).get("postgraduate")
+                                if post_fees:
+                                    st.markdown(f"**Postgraduate fee estimate:** {post_fees}")
+                            if class_12.get("salary_overview"):
+                                st.info(f"💼 Salary outlook: {class_12.get('salary_overview')}")
+                            if any(tok in class_level.lower() for tok in ["ug", "undergraduate", "graduat", "completion"]):
+                                st.success("This postgraduate route is most relevant for your current stage.")
+
+                    if r.get("career_outlook"):
                         st.markdown("---")
-                        st.markdown("#### 💼 Typical Career Directions")
+                        st.markdown("#### 💼 Career Outlook")
+                        for career in r.get("career_outlook", []):
+                            role = career.get("role")
+                            salary = career.get("salary")
+                            st.write(f"→ {role}: {salary}")
+                    elif r.get("career_direction"):
+                        st.markdown("---")
+                        st.markdown("#### 💼 Career Directions")
                         for career in r.get("career_direction", []):
                             st.write(f"→ {career}")
             

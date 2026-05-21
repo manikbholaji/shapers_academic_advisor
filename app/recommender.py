@@ -1,11 +1,18 @@
 import json
+import re
 from collections import defaultdict
+from pathlib import Path
 
-KB_PATH = "app/knowledge_base.json"
+KB_PATH = Path(__file__).resolve().parent / "knowledge_base.json"
 
 def load_kb(path=KB_PATH):
+    path = Path(path)
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def _tokenize_text(text):
+    return set(re.findall(r"\b[a-z0-9]+\b", (text or "").lower()))
 
 
 def recommend_courses(student_profile, kb=None, top_n=3):
@@ -144,35 +151,78 @@ def recommend_field_pathways(field_interest, student_profile=None, kb=None, top_
     profile = student_profile or {}
     interests = [item.lower() for item in profile.get("interests", [])]
     location = (profile.get("location") or profile.get("city") or "").lower()
+    class_level = (profile.get("class_level") or "").lower()
     field = (field_interest or "").strip().lower()
 
+    field_terms = _tokenize_text(field)
+    location_terms = _tokenize_text(location)
     ranked = []
+    matching_field_paths = []
     for pathway in pathways:
-        aliases = [pathway.get("field", "").lower(), *[alias.lower() for alias in pathway.get("aliases", [])]]
-        haystack = " ".join(aliases + interests).lower()
+        aliases = [pathway.get("field", ""), *pathway.get("aliases", [])]
+        alias_terms_list = [_tokenize_text(alias) for alias in aliases]
+        haystack = " ".join([alias.lower() for alias in aliases] + interests)
         score = 0
-        if field and any(field in alias or alias in field for alias in aliases):
+
+        field_matches = False
+        if field_terms:
+            for alias, alias_terms in zip(aliases, alias_terms_list):
+                if alias.lower() == field or field_terms == alias_terms:
+                    field_matches = True
+                    break
+                if alias_terms and field_terms and (field_terms <= alias_terms or alias_terms <= field_terms):
+                    field_matches = True
+                    break
+
+        if field_matches:
             score += 8
-        if any(term in haystack for term in interests):
-            score += 3
+
+        interest_hits = sum(1 for term in interests if re.search(rf"\b{re.escape(term)}\b", haystack))
+        if interest_hits:
+            score += 3 + min(2, interest_hits - 1)
+
+        if class_level:
+            if "class 10" in class_level:
+                if pathway.get("class_11"):
+                    score += 2
+                if "class 10" in pathway.get("class_12", {}).get("diploma_route", {}).get("available_after", "").lower():
+                    score += 1
+            if "class 11" in class_level:
+                if pathway.get("class_11"):
+                    score += 3
+                if pathway.get("class_12", {}).get("undergraduate_routes"):
+                    score += 2
+            if "class 12" in class_level:
+                if pathway.get("class_12", {}).get("undergraduate_routes"):
+                    score += 4
+                if pathway.get("class_12", {}).get("diploma_route"):
+                    score += 2
+            if any(tok in class_level for tok in ["ug", "undergraduate", "graduat", "completion"]):
+                if pathway.get("class_12", {}).get("postgraduate_routes"):
+                    score += 5
+
+        institution_names = (
+            pathway.get("class_12", {}).get("undergraduate_institutions", [])
+            + pathway.get("class_12", {}).get("postgraduate_institutions", [])
+            + pathway.get("class_12", {}).get("diploma_route", {}).get("institutions", [])
+        )
         if location:
-            section_text = " ".join(
-                pathway.get("class_12", {}).get("undergraduate_institutions", [])
-                + pathway.get("class_12", {}).get("postgraduate_institutions", [])
-                + pathway.get("class_12", {}).get("diploma_route", {}).get("institutions", [])
-            ).lower()
-            if location in section_text:
+            location_matches = sum(1 for institution in institution_names if location in institution.lower())
+            score += min(location_matches, 3)
+            if location_terms and any(term in " ".join(institution_names).lower() for term in location_terms):
                 score += 1
 
-        ranked.append(
-            {
-                "field": pathway.get("field", ""),
-                "class_11": pathway.get("class_11", {}),
-                "class_12": pathway.get("class_12", {}),
-                "career_direction": pathway.get("career_direction", []),
-                "score": score,
-            }
-        )
+        item = {
+            **pathway,
+            "score": score,
+        }
+        ranked.append(item)
+        if field_matches:
+            matching_field_paths.append(item)
+
+    if field and matching_field_paths:
+        matching_field_paths.sort(key=lambda item: item["score"], reverse=True)
+        return matching_field_paths[:top_n]
 
     ranked.sort(key=lambda item: item["score"], reverse=True)
     return ranked[:top_n]
