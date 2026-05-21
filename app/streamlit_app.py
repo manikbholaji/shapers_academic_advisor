@@ -1259,14 +1259,7 @@ elif page == "Analytics":
                     st.success(f"Last reprocessed: {meta.get('last_run')} — {meta.get('processed',0)} rows")
             else:
                 st.info("No reprocess run recorded yet")
-        # Ensure timestamp is parsed
-        if 'timestamp' in df.columns:
-            try:
-                df['ts'] = pd.to_datetime(df['timestamp'], utc=True)
-            except Exception:
-                df['ts'] = pd.to_datetime(df['timestamp'], errors='coerce')
-        else:
-            df['ts'] = pd.NaT
+        trends_df = analytics_module.prepare_interaction_trends(df)
 
         # Basic sentiment and counts
         sentiment_col = 'sentiment' if 'sentiment' in df.columns else ('sentiment_label' if 'sentiment_label' in df.columns else None)
@@ -1293,14 +1286,38 @@ elif page == "Analytics":
 
         st.markdown('---')
 
-        # Time series: interactions per day
+        # Time series: interactions per day and sentiment movement
         with st.expander('📈 Interaction Trends', expanded=True):
-            if not df.empty and 'ts' in df.columns and df['ts'].notna().any():
-                df_ts = df.set_index('ts').resample('1D').size().rename('count').reset_index()
-                fig_ts = px.area(df_ts, x='ts', y='count', title='Interactions per day', labels={'ts': 'Date', 'count': 'Interactions'})
+            if not trends_df.empty:
+                trend_cols = st.columns(3)
+                with trend_cols[0]:
+                    st.metric('Trend days', len(trends_df))
+                with trend_cols[1]:
+                    st.metric('Peak day interactions', int(trends_df['interactions'].max()))
+                with trend_cols[2]:
+                    latest_sent = trends_df['avg_compound'].iloc[-1]
+                    st.metric('Latest avg sentiment', f"{latest_sent:.2f}")
+
+                fig_ts = px.bar(
+                    trends_df,
+                    x='date',
+                    y='interactions',
+                    title='Interactions per day',
+                    labels={'date': 'Date', 'interactions': 'Interactions'},
+                )
                 st.plotly_chart(fig_ts, use_container_width=True)
+
+                fig_sent = px.line(
+                    trends_df,
+                    x='date',
+                    y='avg_compound',
+                    markers=True,
+                    title='Average sentiment by day',
+                    labels={'date': 'Date', 'avg_compound': 'Avg compound'},
+                )
+                st.plotly_chart(fig_sent, use_container_width=True)
             else:
-                st.info('No timestamped interactions available yet.')
+                st.info('No valid timestamped interactions available yet. New messages will populate trends automatically.')
 
         # Sentiment distribution
         with st.expander('📊 Sentiment Distribution', expanded=True):

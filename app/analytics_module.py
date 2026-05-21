@@ -50,6 +50,66 @@ def load_interactions(file_path: str = None):
     return pd.read_csv(target)
 
 
+def prepare_interaction_trends(df=None):
+    """Build a robust daily trends table for the analytics dashboard.
+
+    Returns a dataframe with columns:
+    - date
+    - interactions
+    - avg_compound
+    - positive
+    - negative
+    - neutral
+    """
+    if df is None:
+        df = load_interactions()
+
+    if df is None or df.empty:
+        return pd.DataFrame(columns=["date", "interactions", "avg_compound", "positive", "negative", "neutral"])
+
+    working = df.copy()
+    if "timestamp" not in working.columns:
+        return pd.DataFrame(columns=["date", "interactions", "avg_compound", "positive", "negative", "neutral"])
+
+    working["ts"] = pd.to_datetime(working["timestamp"], errors="coerce", utc=True, format="mixed")
+    working = working.dropna(subset=["ts"])
+    if working.empty:
+        return pd.DataFrame(columns=["date", "interactions", "avg_compound", "positive", "negative", "neutral"])
+
+    if "compound" not in working.columns:
+        working["compound"] = 0.0
+    working["compound"] = pd.to_numeric(working["compound"], errors="coerce").fillna(0.0)
+
+    if "sentiment" not in working.columns:
+        working["sentiment"] = "unknown"
+    working["sentiment"] = working["sentiment"].fillna("unknown").astype(str).str.lower()
+
+    working["date"] = working["ts"].dt.tz_convert(None).dt.normalize()
+
+    grouped = working.groupby("date", as_index=False).agg(
+        interactions=("timestamp", "count"),
+        avg_compound=("compound", "mean"),
+    )
+
+    sentiment_counts = (
+        working.pivot_table(index="date", columns="sentiment", values="timestamp", aggfunc="count", fill_value=0)
+        .reset_index()
+    )
+
+    trends = grouped.merge(sentiment_counts, on="date", how="left")
+    for label in ["positive", "negative", "neutral"]:
+        if label not in trends.columns:
+            trends[label] = 0
+
+    trends = trends.sort_values("date").reset_index(drop=True)
+    trends["date"] = pd.to_datetime(trends["date"]).dt.date
+    ordered_columns = ["date", "interactions", "avg_compound", "positive", "negative", "neutral"]
+    for column in ordered_columns:
+        if column not in trends.columns:
+            trends[column] = 0 if column != "date" else pd.NaT
+    return trends[ordered_columns]
+
+
 def reprocess_sentiments(file_path: str = None, sentiment_fn=None, progress_callback=None):
     """Re-run sentiment analysis for all rows in the log and overwrite sentiment columns.
 
