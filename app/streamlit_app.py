@@ -6,14 +6,16 @@ import streamlit as st
 # Streamlit runs this file from the `app/` directory, so sibling modules are
 # importable directly by filename. Using local imports avoids relying on the
 # repository root being present on sys.path in every environment.
-from api_client import AIClient
-import recommender
-import appointments
-import sentiment
-import analytics_module
+from .api_client import AIClient
+from . import recommender
+from . import appointments
+from . import sentiment
+from . import analytics_module
 import json
 import io
 from typing import Optional
+import pandas as pd
+import plotly.express as px
 
 st.set_page_config(
     page_title="SHAPERS Academic Advisor",
@@ -1218,68 +1220,95 @@ elif page == "Book Appointment":
 
 elif page == "Analytics":
     st.markdown("<h2>📊 Interaction Analytics</h2>", unsafe_allow_html=True)
-    st.markdown("Track user interactions, sentiment trends, and advisor performance.")
-    
+    st.markdown("A professional dashboard for conversation volume, sentiment trends, and exportable reports.")
+
     try:
         df = analytics_module.load_interactions()
-        stats = analytics_module.simple_stats(df)
-        
-        st.markdown("---")
-        
-        # Key metrics
-        st.markdown("<h3>📈 Key Metrics</h3>", unsafe_allow_html=True)
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            st.metric("Total Interactions", len(df), delta=None)
-        with col2:
-            if stats and 'avg_sentiment' in stats:
-                st.metric("Avg Sentiment", f"{stats['avg_sentiment']:.2f}", delta="Neutral" if -0.1 < stats['avg_sentiment'] < 0.1 else "Positive" if stats['avg_sentiment'] > 0 else "Negative")
+        # Admin control: recompute sentiment for all logs
+        colA, colB = st.columns([3, 1])
+        with colA:
+            if st.button("🔁 Recompute sentiment for all logs"):
+                with st.spinner("Recomputing sentiment across all logged interactions..."):
+                    res = analytics_module.reprocess_sentiments()
+                st.success(f"Recomputed sentiment for {res.get('processed', 0)} rows.")
+                # reload
+                df = analytics_module.load_interactions()
+        with colB:
+            meta = analytics_module.get_reprocess_meta()
+            if meta:
+                st.caption(f"Last reprocessed: {meta.get('last_run')} — {meta.get('processed',0)} rows")
             else:
-                st.metric("Avg Sentiment", "N/A")
-        with col3:
-            positive_count = len(df[df.get('sentiment_label', 'neutral') == 'positive']) if 'sentiment_label' in df.columns else 0
-            st.metric("Positive Responses", positive_count)
-        with col4:
-            negative_count = len(df[df.get('sentiment_label', 'neutral') == 'negative']) if 'sentiment_label' in df.columns else 0
-            st.metric("Needs Improvement", negative_count)
-        
-        st.markdown("---")
-        
-        # Detailed data
-        st.markdown("<h3>📋 Recent Interactions</h3>", unsafe_allow_html=True)
-        
-        col_count, col_display = st.columns([1, 3])
-        with col_count:
-            display_count = st.slider("Show last N interactions", min_value=10, max_value=100, value=50, step=10)
-        
-        st.dataframe(df.tail(display_count), use_container_width=True)
+                st.caption("No reprocess run recorded yet")
+        # Ensure timestamp is parsed
+        if 'timestamp' in df.columns:
+            try:
+                df['ts'] = pd.to_datetime(df['timestamp'], utc=True)
+            except Exception:
+                df['ts'] = pd.to_datetime(df['timestamp'], errors='coerce')
+        else:
+            df['ts'] = pd.NaT
 
-        # Provide an explicit CSV download button to avoid toolbar interception issues
-        try:
-            if not df.empty:
-                csv_bytes = df.tail(display_count).to_csv(index=False).encode("utf-8")
-                st.download_button("⬇️ Download interactions CSV", data=csv_bytes, file_name="interactions.csv", mime="text/csv", use_container_width=True)
-        except Exception:
-            pass
-        
-        st.markdown("---")
-        
-        # Statistics summary
-        if stats:
-            st.markdown("<h3>📊 Summary Statistics</h3>", unsafe_allow_html=True)
-            col_stat1, col_stat2 = st.columns(2)
-            with col_stat1:
-                st.info(f"**User Engagement:** {stats.get('total_interactions', 0)} interactions logged")
-            with col_stat2:
-                st.success(f"**Data Quality:** {stats.get('interactions_with_sentiment', 0)} interactions with sentiment analysis")
-        
-        st.markdown("---")
-        st.info("💡 **Dashboard Insights:** Use this to identify which topics need better explanation or new examples. Monitor sentiment trends to improve advisor responses.")
-        
+        # Basic sentiment and counts
+        sentiment_col = 'sentiment' if 'sentiment' in df.columns else ('sentiment_label' if 'sentiment_label' in df.columns else None)
+        compound_col = 'compound' if 'compound' in df.columns else None
+
+        total_interactions = len(df)
+        avg_compound = df[compound_col].mean() if compound_col and compound_col in df.columns else None
+
+        # KPIs
+        st.markdown('---')
+        k1, k2, k3, k4 = st.columns(4)
+        k1.metric('Total Interactions', total_interactions)
+        if avg_compound is not None and not pd.isna(avg_compound):
+            k2.metric('Avg Sentiment (compound)', f"{avg_compound:.2f}")
+        else:
+            k2.metric('Avg Sentiment (compound)', 'N/A')
+        if sentiment_col:
+            sent_counts = df[sentiment_col].fillna('unknown').value_counts().to_dict()
+            k3.metric('Positive', sent_counts.get('positive', sent_counts.get('pos', 0)))
+            k4.metric('Negative', sent_counts.get('negative', sent_counts.get('neg', 0)))
+        else:
+            k3.metric('Positive', 'N/A')
+            k4.metric('Negative', 'N/A')
+
+        st.markdown('---')
+
+        # Time series: interactions per day
+        with st.expander('📈 Interaction Trends', expanded=True):
+            if not df.empty and 'ts' in df.columns and df['ts'].notna().any():
+                df_ts = df.set_index('ts').resample('1D').size().rename('count').reset_index()
+                fig_ts = px.area(df_ts, x='ts', y='count', title='Interactions per day', labels={'ts': 'Date', 'count': 'Interactions'})
+                st.plotly_chart(fig_ts, use_container_width=True)
+            else:
+                st.info('No timestamped interactions available yet.')
+
+        # Sentiment distribution
+        with st.expander('📊 Sentiment Distribution', expanded=True):
+            if sentiment_col and sentiment_col in df.columns:
+                sent = df[sentiment_col].fillna('unknown')
+                fig_pie = px.pie(values=sent.value_counts().values, names=sent.value_counts().index, title='Sentiment distribution')
+                st.plotly_chart(fig_pie, use_container_width=True)
+            else:
+                st.info('Sentiment labels not available in logs yet.')
+
+        st.markdown('---')
+
+        # Recent interactions and CSV download
+        st.markdown('#### 📋 Recent Interactions')
+        display_count = st.number_input('Show last N interactions', min_value=5, max_value=500, value=50, step=5)
+        recent = df.tail(display_count)
+        st.dataframe(recent[['timestamp','user','role','message', sentiment_col] if sentiment_col else ['timestamp','user','role','message']], use_container_width=True)
+
+        if not df.empty:
+            csv_bytes = df.tail(display_count).to_csv(index=False).encode('utf-8')
+            st.download_button('⬇️ Download interactions CSV', data=csv_bytes, file_name='interactions.csv', mime='text/csv', use_container_width=True)
+
+        st.markdown('---')
+        st.info('💡 Use these metrics to identify topic gaps, monitor sentiment trends, and improve advisor responses.')
+
     except Exception as e:
-        st.error(f"❌ No interaction data available yet or failed to load: {str(e)}")
-        st.info("Start chatting in the Chat tab to generate analytics data.")
+        st.error(f'❌ Failed to load analytics data: {e}')
+        st.info('Start chatting in the Chat tab to generate analytics data.')
 
 elif page == "Admin":
     st.markdown("<h2>⚙️ Admin Tools & Pathway Advisor</h2>", unsafe_allow_html=True)
@@ -1317,7 +1346,7 @@ elif page == "Admin":
             "city": location,
             "interests": [i.strip() for i in student_signals.split(",") if i.strip()],
         }
-        recs = recommender.recommend_field_pathways(field_interest, profile)
+        recs = recommender.recommend_field_pathways(field_interest, profile, ai_client=client)
         
         st.markdown("---")
         st.markdown("<h3>🗺️ Recommended Pathways</h3>", unsafe_allow_html=True)
@@ -1328,13 +1357,17 @@ elif page == "Admin":
         )
         
         if not recs:
-            st.warning("⚠️ No pathways found in the knowledge base yet.")
+            st.warning("⚠️ No pathway recommendation could be generated. Check your AI provider settings or review the input.")
         else:
             for idx, r in enumerate(recs, 1):
                 with st.expander(f"#{idx} {r.get('field')} — Complete Pathway", expanded=(idx==1)):
                     class_11 = r.get("class_11", {})
                     class_12 = r.get("class_12", {})
                     diploma_route = class_12.get("diploma_route", {})
+
+                    if r.get("summary"):
+                        st.markdown("#### 📝 Pathway summary")
+                        st.write(r.get("summary"))
 
                     if location:
                         normalized_location = location.lower().strip()

@@ -56,6 +56,17 @@ pip install -r requirements.txt
 streamlit run app/streamlit_app.py
 ```
 
+## Submission & Demo
+
+For college evaluation, see `SUBMISSION.md` for a submission checklist, demo instructions, and evaluation notes.
+
+To run a short scripted demo of the chatbot (uses Mock mode when no API key is set):
+
+```powershell
+python scripts/demo_chat.py
+# Output saved to demos/sample_chat_output.txt
+```
+
 ## What to use in the app
 
 ### Student profile
@@ -108,6 +119,13 @@ streamlit run app/streamlit_app.py
 cd "f:\My Project\shapers_academic_advisor"
 python -m pytest -q
 ```
+
+## Sentiment analysis workflow
+
+- **Runtime behavior**: messages logged via `analytics_module.log_interaction()` automatically run `sentiment.analyze_sentiment(text)` when no sentiment is provided; the CSV `data/conversations.csv` stores `sentiment` and `compound` columns.
+- **Recompute / reprocess**: to re-run sentiment over existing logs, use the admin button on the Analytics page labeled "🔁 Recompute sentiment for all logs" or call `analytics_module.reprocess_sentiments(file_path=None)` programmatically.
+- **Testing**: unit tests were added for `app.sentiment.analyze_sentiment` and `analytics_module.reprocess_sentiments` in `tests/test_sentiment.py` and `tests/test_analytics_reprocess.py`.
+
 
 ## Deployment on Streamlit Community Cloud
 

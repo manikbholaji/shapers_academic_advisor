@@ -3,6 +3,9 @@ import re
 from collections import defaultdict
 from pathlib import Path
 
+from .api_client import AIClient
+import warnings
+
 KB_PATH = Path(__file__).resolve().parent / "knowledge_base.json"
 
 def load_kb(path=KB_PATH):
@@ -15,12 +18,162 @@ def _tokenize_text(text):
     return set(re.findall(r"\b[a-z0-9]+\b", (text or "").lower()))
 
 
-def recommend_courses(student_profile, kb=None, top_n=3):
-    """Simple rule-based recommender.
+def _extract_json_from_response(text):
+    if not isinstance(text, str) or not text.strip():
+        return None
 
-    student_profile: dict with keys: interests (list), completed (list), goals (str)
-    kb: loaded knowledge base
+    try:
+        return json.loads(text)
+    except Exception:
+        pass
+
+    start = text.find("{")
+    end = text.rfind("}")
+    if 0 <= start < end:
+        candidate = text[start:end + 1]
+        try:
+            return json.loads(candidate)
+        except Exception:
+            pass
+
+    start = text.find("[")
+    end = text.rfind("]")
+    if 0 <= start < end:
+        candidate = text[start:end + 1]
+        try:
+            return json.loads(candidate)
+        except Exception:
+            pass
+
+    return None
+
+
+def _build_pathway_prompt(field_interest, student_profile):
+    location = (student_profile.get("location") or student_profile.get("city") or "").strip()
+    class_level = (student_profile.get("class_level") or "").strip()
+    interests = [i.strip() for i in student_profile.get("interests", []) if i and i.strip()]
+    keywords = ", ".join(interests) if interests else "None"
+
+    return (
+        "You are an expert academic advisor for Indian students. "
+        "Provide a complete career pathway for the chosen field of interest, "
+        "including clear recommendations for Class 11 and Class 12, diploma or undergraduate routes, postgraduate options, "
+        "top institution guidance, average fee estimates, and salary outlook. "
+        "The output should explicitly account for the student’s current class stage, preferred city/state, and any optional keywords. "
+        "Return one JSON object or a JSON array containing one object with the following keys: "
+        "field, summary, class_11, class_12, career_outlook, top_institutions_by_city. "
+        "class_11 should include decision guidance, recommended streams, subjects, and focus areas. "
+        "class_12 should include action items, entrance exam suggestions, diploma and undergraduate/postgraduate route guidance, "
+        "top institutions, average fees by route, and salary outlook. "
+        "career_outlook should include career roles and salary guidance relevant to the field. "
+        "If a preferred city or state is provided, include a dedicated entry under top_institutions_by_city for that city/state. "
+        "Do not include any extra metadata outside the requested JSON structure. "
+        f"Field of interest: {field_interest}. "
+        f"Current class stage: {class_level}. "
+        f"Preferred city or state: {location or 'Not specified'}. "
+        f"Keywords: {keywords}. "
+    )
+
+
+def _recommend_field_pathways_ai(field_interest, student_profile, ai_client):
+    prompt = _build_pathway_prompt(field_interest, student_profile)
+    messages = [
+        {"role": "system", "content": "You are a helpful, practical Indian academic advisor."},
+        {"role": "user", "content": prompt},
+    ]
+    response = ai_client.send_message(messages)
+    parsed = _extract_json_from_response(response)
+
+    if isinstance(parsed, dict):
+        parsed.setdefault("field", field_interest)
+        parsed.setdefault("summary", response)
+        if _validate_pathway(parsed):
+            return [parsed]
+        # fall through to try to normalize below
+    if isinstance(parsed, list):
+        normalized = []
+        for item in parsed:
+            if isinstance(item, dict):
+                item.setdefault("field", field_interest)
+                item.setdefault("summary", response)
+                if _validate_pathway(item):
+                    normalized.append(item)
+        if normalized:
+            return normalized
+    # If validation failed for parsed content, return a safe fallback with the raw summary
+    return [{
+        "field": field_interest or "Academic pathway",
+        "summary": response,
+        "class_11": {},
+        "class_12": {},
+        "career_outlook": [],
+        "top_institutions_by_city": {},
+    }]
+
+
+def _validate_pathway(item):
+    """Lightweight structural validation for AI-generated pathway objects.
+
+    Ensures required keys exist and basic types are correct. This avoids returning
+    malformed objects to the UI.
     """
+    if not isinstance(item, dict):
+        return False
+    required_keys = ["field", "summary", "class_11", "class_12", "career_outlook", "top_institutions_by_city"]
+    for k in required_keys:
+        if k not in item:
+            return False
+    # Basic type checks
+    if not isinstance(item.get("field"), str):
+        return False
+    if not isinstance(item.get("summary"), str):
+        return False
+    if not isinstance(item.get("class_11"), dict):
+        return False
+    if not isinstance(item.get("class_12"), dict):
+        return False
+    if not isinstance(item.get("career_outlook"), (list, tuple)):
+        return False
+    if not isinstance(item.get("top_institutions_by_city"), dict):
+        return False
+    return True
+
+
+def _build_courses_prompt(student_profile, top_n=3):
+    interests = ", ".join([i for i in student_profile.get("interests", [])]) or "None"
+    completed = ", ".join([c for c in student_profile.get("completed", [])]) or "None"
+    goals = student_profile.get("goals", "Not specified")
+    return (
+        "You are an expert academic advisor. Return a JSON array of up to "
+        f"{top_n} course suggestions tailored to the student's interests and goals. "
+        "Each item should include: code, name, description, tags, prerequisites, and why it's recommended. "
+        f"Interests: {interests}. Completed: {completed}. Goals: {goals}."
+    )
+
+
+def _recommend_courses_ai(student_profile, ai_client, top_n=3):
+    prompt = _build_courses_prompt(student_profile, top_n=top_n)
+    messages = [
+        {"role": "system", "content": "You are a helpful course recommender."},
+        {"role": "user", "content": prompt},
+    ]
+    response = ai_client.send_message(messages)
+    parsed = _extract_json_from_response(response)
+    if isinstance(parsed, list):
+        return parsed[:top_n]
+    if isinstance(parsed, dict):
+        return [parsed]
+    return []
+
+
+def recommend_courses(student_profile, kb=None, top_n=3, ai_client=None):
+    """Recommend courses. Uses AI when `ai_client` is provided; otherwise falls back to KB rules."""
+    if ai_client is not None:
+        try:
+            return _recommend_courses_ai(student_profile, ai_client, top_n=top_n)
+        except Exception:
+            pass
+
     if kb is None:
         kb = load_kb()
 
@@ -77,8 +230,35 @@ def recommend_courses(student_profile, kb=None, top_n=3):
     return ranked[:top_n]
 
 
-def recommend_program_paths(student_profile, kb=None, top_n=5):
-    """Recommend diploma, undergraduate, and postgraduate pathways in India."""
+def recommend_program_paths(student_profile, kb=None, top_n=5, ai_client=None):
+    """Recommend diploma, undergraduate, and postgraduate pathways in India.
+
+    If `ai_client` is provided, use the AI to generate program path recommendations.
+    The knowledge-base fallback is deprecated and will be removed in a future release.
+    """
+    if ai_client is not None:
+        # Build a small prompt for program path recommendations
+        interests = ", ".join([i for i in student_profile.get("interests", [])]) or "None"
+        level = student_profile.get("level", "Any")
+        prompt = (
+            "You are an expert academic advisor. Return a JSON array of recommended program pathways "
+            f"for interests: {interests}. Desired level: {level}. Include level, field, title, best_for, institutions, note, and entry_after."
+        )
+        messages = [
+            {"role": "system", "content": "You are a helpful academic program recommender."},
+            {"role": "user", "content": prompt},
+        ]
+        try:
+            resp = ai_client.send_message(messages)
+            parsed = _extract_json_from_response(resp)
+            if isinstance(parsed, list):
+                return parsed[:top_n]
+            if isinstance(parsed, dict):
+                return [parsed]
+        except Exception:
+            pass
+
+    warnings.warn("KB fallback for program path recommendations is deprecated; provide an `ai_client` for best results.", UserWarning)
     if kb is None:
         kb = load_kb()
 
@@ -139,8 +319,16 @@ def recommend_program_paths(student_profile, kb=None, top_n=5):
     return ranked[:top_n]
 
 
-def recommend_field_pathways(field_interest, student_profile=None, kb=None, top_n=3):
-    """Return complete class 11 through postgraduate pathways for a field of interest."""
+def recommend_field_pathways(field_interest, student_profile=None, kb=None, top_n=3, ai_client=None):
+    """Return complete class 11 through postgraduate pathways for a field of interest.
+
+    If an AI client is provided, pathway recommendations are generated via the API.
+    Otherwise legacy KB-based scoring is used as a fallback.
+    """
+    profile = student_profile or {}
+    if ai_client is not None:
+        return _recommend_field_pathways_ai(field_interest, profile, ai_client)
+
     if kb is None:
         kb = load_kb()
 
@@ -148,7 +336,6 @@ def recommend_field_pathways(field_interest, student_profile=None, kb=None, top_
     if not pathways:
         return []
 
-    profile = student_profile or {}
     interests = [item.lower() for item in profile.get("interests", [])]
     location = (profile.get("location") or profile.get("city") or "").lower()
     class_level = (profile.get("class_level") or "").lower()

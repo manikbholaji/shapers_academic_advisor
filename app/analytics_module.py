@@ -2,6 +2,9 @@ import os
 import csv
 from datetime import datetime
 import pandas as pd
+import json
+
+from . import sentiment as sentiment_module
 
 DATA_DIR = "data"
 LOG_FILE = os.path.join(DATA_DIR, "conversations.csv")
@@ -15,16 +18,107 @@ def _ensure_log():
             writer.writerow(["timestamp", "user", "role", "message", "sentiment", "compound"])
 
 
-def log_interaction(user, role, message, sentiment_label=None, compound=0.0):
+def log_interaction(user, role, message, sentiment_label=None, compound=0.0, file_path: str = None):
+    """Append an interaction to the CSV log.
+
+    If `sentiment_label` is not provided, runs the sentiment analyzer automatically.
+    """
     _ensure_log()
-    with open(LOG_FILE, "a", encoding="utf-8", newline='') as f:
+    # Automatically compute sentiment if not provided
+    if (sentiment_label is None or sentiment_label == "") and message:
+        try:
+            s = sentiment_module.analyze_sentiment(message)
+            sentiment_label = s.get("label")
+            compound = s.get("compound", 0.0)
+        except Exception:
+            sentiment_label = sentiment_label or ""
+            compound = compound or 0.0
+
+    target = file_path or LOG_FILE
+    # Ensure directory exists if a custom file_path used
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    with open(target, "a", encoding="utf-8", newline='') as f:
         writer = csv.writer(f)
         writer.writerow([datetime.utcnow().isoformat() + "Z", user, role, message, sentiment_label or "", compound])
 
 
-def load_interactions():
+def load_interactions(file_path: str = None):
     _ensure_log()
-    return pd.read_csv(LOG_FILE)
+    target = file_path or LOG_FILE
+    return pd.read_csv(target)
+
+
+def reprocess_sentiments(file_path: str = None, sentiment_fn=None):
+    """Re-run sentiment analysis for all rows in the log and overwrite sentiment columns.
+
+    Returns the number of rows processed and a simple breakdown.
+    """
+    target = file_path or LOG_FILE
+    if sentiment_fn is None:
+        sentiment_fn = sentiment_module.analyze_sentiment
+
+    if not os.path.exists(target):
+        return {"processed": 0}
+
+    df = pd.read_csv(target)
+    if "message" not in df.columns:
+        return {"processed": 0}
+
+    # Ensure sentiment column can accept string labels and compound is numeric
+    if "sentiment" in df.columns and df["sentiment"].dtype != object:
+        df["sentiment"] = df["sentiment"].astype(object)
+    if "compound" in df.columns:
+        df["compound"] = pd.to_numeric(df["compound"], errors="coerce").fillna(0.0)
+    else:
+        df["compound"] = 0.0
+
+    processed = 0
+    labels = {"positive": 0, "negative": 0, "neutral": 0, "unknown": 0}
+    for idx, row in df.iterrows():
+        try:
+            msg = row.get("message") or ""
+            s = sentiment_fn(msg)
+            label = s.get("label") if isinstance(s, dict) else None
+            compound = s.get("compound") if isinstance(s, dict) else 0.0
+            df.at[idx, "sentiment"] = label or ""
+            df.at[idx, "compound"] = compound if compound is not None else 0.0
+            if label in labels:
+                labels[label] += 1
+            else:
+                labels["unknown"] += 1
+            processed += 1
+        except Exception:
+            labels["unknown"] += 1
+
+    # Overwrite the file
+    df.to_csv(target, index=False, encoding='utf-8')
+
+    # Write metadata about this reprocess run
+    meta = {
+        "last_run": datetime.utcnow().isoformat() + "Z",
+        "processed": processed,
+        "by_label": labels,
+        "file": os.path.abspath(target),
+    }
+    try:
+        meta_path = os.path.join(DATA_DIR, "reprocess_meta.json")
+        with open(meta_path, "w", encoding="utf-8") as mf:
+            json.dump(meta, mf)
+    except Exception:
+        pass
+
+    return {"processed": processed, "by_label": labels}
+
+
+def get_reprocess_meta():
+    meta_path = os.path.join(DATA_DIR, "reprocess_meta.json")
+    if not os.path.exists(meta_path):
+        return None
+    try:
+        with open(meta_path, "r", encoding="utf-8") as mf:
+            return json.load(mf)
+    except Exception:
+        return None
 
 
 def simple_stats(df=None):
@@ -35,8 +129,9 @@ def simple_stats(df=None):
     user_counts = df["user"].value_counts().head(10).to_dict()
     return {"total": total, "by_sentiment": by_sent, "top_users": user_counts}
 
+
 if __name__ == "__main__":
     # demo
-    log_interaction("student1", "user", "I need course advice", "neutral", 0.0)
+    log_interaction("student1", "user", "I need course advice")
     print(load_interactions().tail())
     print(simple_stats())
