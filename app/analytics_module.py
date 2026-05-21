@@ -3,8 +3,10 @@ import csv
 from datetime import datetime
 import pandas as pd
 import json
+import threading
+import time
 
-from . import sentiment as sentiment_module
+from app import sentiment as sentiment_module
 
 DATA_DIR = "data"
 LOG_FILE = os.path.join(DATA_DIR, "conversations.csv")
@@ -48,7 +50,7 @@ def load_interactions(file_path: str = None):
     return pd.read_csv(target)
 
 
-def reprocess_sentiments(file_path: str = None, sentiment_fn=None):
+def reprocess_sentiments(file_path: str = None, sentiment_fn=None, progress_callback=None):
     """Re-run sentiment analysis for all rows in the log and overwrite sentiment columns.
 
     Returns the number of rows processed and a simple breakdown.
@@ -87,6 +89,11 @@ def reprocess_sentiments(file_path: str = None, sentiment_fn=None):
             else:
                 labels["unknown"] += 1
             processed += 1
+            if progress_callback:
+                try:
+                    progress_callback(processed, len(df))
+                except Exception:
+                    pass
         except Exception:
             labels["unknown"] += 1
 
@@ -108,6 +115,30 @@ def reprocess_sentiments(file_path: str = None, sentiment_fn=None):
         pass
 
     return {"processed": processed, "by_label": labels}
+
+
+def _run_reprocess_background(target, sentiment_fn=None):
+    # internal helper to run reprocess and update metadata progressively
+    meta_path = os.path.join(DATA_DIR, "reprocess_meta.json")
+    try:
+        # mark in-progress
+        with open(meta_path, "w", encoding="utf-8") as mf:
+            json.dump({"in_progress": True, "last_run": None, "processed": 0, "by_label": {}}, mf)
+    except Exception:
+        pass
+
+    # run the actual reprocess
+    res = reprocess_sentiments(file_path=target, sentiment_fn=sentiment_fn)
+
+    # ensure meta written by reprocess_sentiments (it writes final meta)
+    return res
+
+
+def start_reprocess_background(file_path: str = None, sentiment_fn=None):
+    """Start a background thread to run reprocessing. Returns the Thread object."""
+    t = threading.Thread(target=_run_reprocess_background, args=(file_path, sentiment_fn), daemon=True)
+    t.start()
+    return t
 
 
 def get_reprocess_meta():

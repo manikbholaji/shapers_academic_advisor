@@ -3,7 +3,7 @@ import re
 from collections import defaultdict
 from pathlib import Path
 
-from .api_client import AIClient
+from app.api_client import AIClient
 import warnings
 
 KB_PATH = Path(__file__).resolve().parent / "knowledge_base.json"

@@ -3,6 +3,8 @@
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
+- Fix Streamlit deployment imports by using absolute `app.*` imports and adding a startup path guard in `app/streamlit_app.py`.
+- Improve sentiment reprocess UX with progress bar/status text and stronger Admin/Analytics status indicators.
 - Add automatic sentiment analysis when logging interactions (`analytics_module.log_interaction`).
 - Add `analytics_module.reprocess_sentiments()` and `get_reprocess_meta()` for bulk reanalysis and metadata.
 - Admin UI: add "🔁 Recompute sentiment for all logs" button and last-run badge in Analytics and Admin pages.

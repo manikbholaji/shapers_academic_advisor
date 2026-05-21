@@ -1,16 +1,21 @@
 import os
+import sys
 from datetime import date, datetime
 from pathlib import Path
 import streamlit as st
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 # Streamlit runs this file from the `app/` directory, so sibling modules are
 # importable directly by filename. Using local imports avoids relying on the
 # repository root being present on sys.path in every environment.
-from .api_client import AIClient
-from . import recommender
-from . import appointments
-from . import sentiment
-from . import analytics_module
+from app.api_client import AIClient
+from app import recommender
+from app import appointments
+from app import sentiment
+from app import analytics_module
 import json
 import io
 from typing import Optional
@@ -1228,17 +1233,32 @@ elif page == "Analytics":
         colA, colB = st.columns([3, 1])
         with colA:
             if st.button("🔁 Recompute sentiment for all logs"):
+                progress = st.progress(0, text="Starting sentiment reprocess...")
+                status = st.empty()
+
+                def _update_progress(done, total):
+                    if total:
+                        percent = min(100, int((done / total) * 100))
+                    else:
+                        percent = 100
+                    progress.progress(percent, text=f"Reprocessing {done}/{total} interactions")
+                    status.caption(f"Processed {done} of {total} interactions")
+
                 with st.spinner("Recomputing sentiment across all logged interactions..."):
-                    res = analytics_module.reprocess_sentiments()
+                    res = analytics_module.reprocess_sentiments(progress_callback=_update_progress)
+                progress.progress(100, text="Sentiment reprocess complete")
                 st.success(f"Recomputed sentiment for {res.get('processed', 0)} rows.")
                 # reload
                 df = analytics_module.load_interactions()
         with colB:
             meta = analytics_module.get_reprocess_meta()
             if meta:
-                st.caption(f"Last reprocessed: {meta.get('last_run')} — {meta.get('processed',0)} rows")
+                if meta.get("in_progress"):
+                    st.warning(f"Reprocess running... processed {meta.get('processed', 0)} rows so far")
+                else:
+                    st.success(f"Last reprocessed: {meta.get('last_run')} — {meta.get('processed',0)} rows")
             else:
-                st.caption("No reprocess run recorded yet")
+                st.info("No reprocess run recorded yet")
         # Ensure timestamp is parsed
         if 'timestamp' in df.columns:
             try:
@@ -1317,9 +1337,12 @@ elif page == "Admin":
     # Show last sentiment reprocess info for admins
     meta = analytics_module.get_reprocess_meta()
     if meta:
-        st.caption(f"Last sentiment reprocess: {meta.get('last_run')} — {meta.get('processed',0)} rows")
+        if meta.get("in_progress"):
+            st.warning(f"Sentiment reprocess running... processed {meta.get('processed', 0)} rows so far")
+        else:
+            st.success(f"Last sentiment reprocess: {meta.get('last_run')} — {meta.get('processed',0)} rows")
     else:
-        st.caption("No sentiment reprocess has been run yet")
+        st.info("No sentiment reprocess has been run yet")
 
     st.markdown("---")
     
