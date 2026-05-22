@@ -1,30 +1,27 @@
-# Architecture & API Flow
+# Architecture
 
-This document explains the core components of the SHAPERS Academic Advisor app and how they interact.
+Basic Maths Prep is organized around a small, testable core and a Streamlit UI shell.
 
-Components:
+## Main parts
 
-- Streamlit App (`app/streamlit_app.py`): UI layer with a Punjab-focused advisor persona, student profile panel, board-aware Chat, Knowledge Base, Appointments, Analytics, and Admin.
-- AI Client (`app/api_client.py`): abstracts provider calls (OpenAI, Google, Dialogflow, or Mock) and returns assistant responses.
-- Knowledge Base (`app/knowledge_base.json`): Indian board JSON store for academic policies and course metadata.
-- Recommender (`app/recommender.py`): rule-based recommendation engine using student profile and KB.
-- Appointments (`app/appointments.py`): simple JSON-backed booking store for advisor appointments.
-- Sentiment (`app/sentiment.py`): VADER-based sentiment analysis for user feedback and logs.
-- Analytics (`app/analytics_module.py`): logs conversations and provides summary stats via pandas.
-- Tests (`tests/conversational_tests.py`): simple smoke tests for conversational replies.
+- `app/streamlit_app.py` - entrypoint wrapper used by Streamlit.
+- `app/basic_maths_app.py` - renders the dashboard, learning path, practice lab, appointment flow, and analytics views.
+- `app/basic_maths.py` - contains recommendations, study planning, topic summaries, and AI fallback replies.
+- `app/appointments.py` - JSON-backed appointment storage plus automatic slot suggestion.
+- `app/analytics_module.py` - logs practice interactions and prepares trend tables for charts.
+- `app/sentiment.py` - optional sentiment scoring for logged practice text.
+- `app/api_client.py` - provider wrapper for OpenAI, Google, or mock responses.
 
-API Flow (high-level):
+## Data flow
 
-1. User sets a student profile (board, class, medium, goal) in the sidebar.
-2. User submits a question in the Streamlit chat UI.
-3. Streamlit adds the user message, builds a Punjab-aware system prompt, and calls `AIClient.send_message()`.
-4. The response is returned and displayed; both user message and assistant reply are logged by `analytics_module.log_interaction()`.
-5. `sentiment.analyze_sentiment()` can run on the user's message for dashboards and monitoring.
-6. For course recommendations, the app calls `recommender.recommend_courses()` with the student's profile.
-7. For bookings, `appointments.book_appointment()` creates an entry in `data/appointments.json`.
+1. The user saves a study profile in the sidebar.
+2. The dashboard uses that profile to generate topic recommendations and the weekly plan.
+3. The practice lab logs user prompts and coach replies.
+4. The analytics view reads the log file and plots daily activity.
+5. Appointment booking picks the next available slot and stores it in `data/appointments.json`.
 
-Security & Deployment:
+## Design notes
 
-- Do not commit secrets. Use `.streamlit/secrets.toml` locally and Streamlit Community Cloud secrets for deployment.
-- For production-grade deployments use authenticated APIs, HTTPS endpoints for booking integrations, and a persistent database.
-
+- The UI uses a warm, editorial palette inspired by the reference images.
+- The content is original and maths-focused.
+- The app stays functional even without external AI keys because of the deterministic fallback.

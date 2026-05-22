@@ -1,3 +1,20 @@
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+env/
+venv/
+.env
+*.pyc
+*.pyo
+*.pyd
+build/
+dist/
+*.egg-info/
+.DS_Store
+.vscode/
+.pytest_cache/
+.streamlit/
+/.venv
 # Python
 __pycache__/
 *.py[cod]
@@ -7,7 +24,7 @@ __pycache__/
 venv/
 
 # Streamlit secrets
-.streamlit/secrets.toml
+.streamlit/
 
 # VSCode
 .vscode/

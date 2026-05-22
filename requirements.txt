@@ -9,3 +9,7 @@ requests
 Pillow
 reportlab
 playwright
+python-docx
+PyPDF2
+pytesseract
+pdf2image
