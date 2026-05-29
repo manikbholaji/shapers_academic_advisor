@@ -329,30 +329,79 @@ def _heuristic_reply(prompt: str, profile: Dict[str, object]) -> str:
     )
 
 
-def generate_math_reply(prompt: str, profile: Dict[str, object], ai_client=None) -> str:
+def generate_math_reply(messages: List[Dict[str, str]], profile: Dict[str, object], ai_client=None) -> str:
+    """Generate a tutor reply using AI history or a heuristic fallback.
+
+    The AI flow is designed to act as an Academic Advisor, providing both maths coaching
+    and broader career/pathway guidance for Indian students.
+    """
+    if not messages:
+        return "How can I help you today with your maths prep or academic planning?"
+
+    last_user_prompt = ""
+    for msg in reversed(messages):
+        if msg["role"] == "user":
+            last_user_prompt = msg["content"]
+            break
+
     if ai_client is not None:
         system_prompt = (
-            "You are a friendly Basic Maths Prep coach for school students. "
-            "Give short, structured advice that fits the learner's grade, board, city, and goal. "
-            "Always include a practical next step and keep the answer grounded in basic maths revision."
+            "You are an expert SHAPERS Academic Advisor and Maths Coach for Indian students. "
+            "You provide practical, friendly, and structured advice for school learners (Classes 1-12) "
+            "across CBSE, ICSE, and State Boards.\n\n"
+            "Capabilities:\n"
+            "1. Maths Coaching: Explain concepts, provide practice steps, and correct mistakes.\n"
+            "2. Academic Planning: Suggest study schedules and revision timelines.\n"
+            "3. Career Pathways: Guide students on stream selection (Science, Commerce, Humanities) "
+            "and future career routes in India.\n\n"
+            "Always include a practical next step. Keep the tone encouraging and academic. "
+            "Use the provided student profile to tailor your advice."
         )
-        user_prompt = (
-            f"Student profile: {profile_summary(profile)}. "
-            f"Weak topics: {', '.join(profile.get('weak_topics', [])) or 'None'}. "
-            f"Question: {prompt}"
-        )
+
+        # Incorporate profile summary into the messages context if it's the first message
+        # or as a recurring reminder in a system-like message.
+        profile_context = f"Student Profile: {profile_summary(profile)}. Weak topics: {', '.join(profile.get('weak_topics', [])) or 'None'}."
+
+        # We pass the full history to the AI client
+        full_messages = [{"role": "system", "content": f"{system_prompt}\n\n{profile_context}"}] + messages
+
         try:
-            response = ai_client.send_message(
-                [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ]
-            )
+            response = ai_client.send_message(full_messages)
             if isinstance(response, str) and response.strip():
                 return response.strip()
         except Exception:
             pass
-    return _heuristic_reply(prompt, profile)
+
+    return _heuristic_reply(last_user_prompt, profile)
+
+def stream_math_reply(messages: List[Dict[str, str]], profile: Dict[str, object], ai_client=None):
+    """Generator for streaming a tutor reply using AI history.
+
+    Acts as an Academic Advisor and Maths Coach.
+    """
+    if not messages:
+        yield "How can I help you today?"
+        return
+
+    if ai_client is not None:
+        system_prompt = (
+            "You are an expert SHAPERS Academic Advisor and Maths Coach for Indian students. "
+            "You provide practical, friendly, and structured advice for school learners (Classes 1-12).\n\n"
+            "Capabilities: Maths Coaching, Academic Planning, and Career Pathways.\n"
+            "Always include a practical next step. Keep the tone encouraging."
+        )
+        profile_context = f"Student Profile: {profile_summary(profile)}. Weak topics: {', '.join(profile.get('weak_topics', [])) or 'None'}."
+        full_messages = [{"role": "system", "content": f"{system_prompt}\n\n{profile_context}"}] + messages
+
+        try:
+            for chunk in ai_client.stream_message(full_messages):
+                yield chunk
+            return
+        except Exception:
+            pass
+
+    # Fallback to non-streaming heuristic if something fails
+    yield generate_math_reply(messages, profile, ai_client)
 
 
 def build_learning_summary(profile: Dict[str, object]) -> Dict[str, object]:

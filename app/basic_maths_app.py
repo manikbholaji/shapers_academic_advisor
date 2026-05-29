@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 from copy import deepcopy
 from datetime import date, timedelta
@@ -19,6 +20,8 @@ from app import analytics_module
 from app import appointments
 from app import basic_maths
 from app import mcq_manager
+from app import recommender
+from app import study_planner
 
 
 def _render_math_text(txt: str):
@@ -413,26 +416,36 @@ def _render_practice_lab(profile, ai_client, provider):
                 else:
                     st.session_state.maths_variant_preview = variants
                     st.session_state.maths_show_preview = True
-                    st.experimental_rerun()
+                    st.rerun()
     starters = basic_maths.quick_starters(profile)
     starter_cols = st.columns(len(starters))
     for idx, starter in enumerate(starters):
         if starter_cols[idx].button(starter):
             st.session_state.maths_prompt = starter
 
-    prompt = st.text_area("Write a maths question", value=st.session_state.maths_prompt, height=130, placeholder="Ask about fractions, algebra, speed, or exam strategy.")
+    prompt = st.text_area("Write a maths or academic question", value=st.session_state.maths_prompt, height=130, placeholder="Ask about fractions, algebra, or stream selection (e.g. 'What after Class 10?').")
     response_style = st.radio("Response style", ["Text", "Study card", "Bullet steps"], horizontal=True)
     if st.button("Generate coach reply"):
         if not prompt.strip():
             st.warning("Type a question first.")
         else:
-            reply = basic_maths.generate_math_reply(prompt, profile, ai_client=ai_client)
+            # Maintain history locally before sending to AI
             st.session_state.maths_chat.append({"role": "user", "content": prompt})
-            st.session_state.maths_chat.append({"role": "assistant", "content": reply})
+            
+            with st.chat_message("assistant"):
+                reply_placeholder = st.empty()
+                full_reply = ""
+                # Use stream_math_reply for a critically acclaimed UX
+                for chunk in basic_maths.stream_math_reply(st.session_state.maths_chat, profile, ai_client=ai_client):
+                    full_reply += chunk
+                    reply_placeholder.markdown(full_reply + "▌")
+                reply_placeholder.markdown(full_reply)
+            
+            st.session_state.maths_chat.append({"role": "assistant", "content": full_reply})
             analytics_module.log_interaction(profile.get("student_name") or "maths-student", "user", prompt)
-            analytics_module.log_interaction(profile.get("student_name") or "maths-student", "assistant", reply)
-            st.session_state.maths_prompt = prompt
-            st.session_state.maths_quiz_result = reply
+            analytics_module.log_interaction(profile.get("student_name") or "maths-student", "assistant", full_reply)
+            st.session_state.maths_prompt = ""  # Clear prompt after sending
+            st.session_state.maths_quiz_result = full_reply
 
     if st.session_state.maths_quiz_result:
         reply = st.session_state.maths_quiz_result
@@ -614,7 +627,7 @@ def _render_practice_lab(profile, ai_client, provider):
                     if st.button("Practice this domain", key=btn_key):
                         st.session_state.maths_practice_pref = rec.get('domain_id')
                         st.session_state.maths_nav = "Practice Lab"
-                        st.experimental_rerun()
+                        st.rerun()
 
                     # immediate attempt: generate a short practice set and open it
                     attempt_key = f"attempt-{i}"
@@ -631,7 +644,7 @@ def _render_practice_lab(profile, ai_client, provider):
                             # set modal questions and request modal display
                             st.session_state.maths_modal_questions = questions
                             st.session_state.maths_show_modal = True
-                            st.experimental_rerun()
+                            st.rerun()
 
 
 def _render_appointments(profile):
@@ -742,6 +755,65 @@ def _render_analytics(profile):
     st.dataframe(df.tail(10), use_container_width=True)
 
 
+from app import recommender
+from app import study_planner
+
+def _render_pathways(profile, ai_client):
+    st.markdown("<div class='bm-eyebrow'>Academic pathways</div>", unsafe_allow_html=True)
+    st.subheader("Career & Program Guidance")
+    st.markdown("Explore complete academic roadmaps from Class 11 through postgraduate education.")
+
+    with st.form("pathway_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            field_options = [
+                "Engineering / Computer Science",
+                "Medical / Life Sciences",
+                "Commerce / Management",
+                "Humanities / Psychology / Public Policy",
+                "Design / Architecture",
+                "Law / Legal Studies"
+            ]
+            field_interest = st.selectbox("📚 Field of interest", field_options)
+        with col2:
+            location = st.text_input("📍 Preferred city / state", value=profile.get("city", ""))
+        
+        student_signals = st.text_input("💡 Keywords (e.g. coding, finance, biology)", placeholder="Help the AI tailor the response")
+        submit_pathway = st.form_submit_button("🚀 Build Complete Pathway")
+
+    if submit_pathway:
+        with st.spinner("Generating your personalized pathway..."):
+            student_profile = {
+                "class_level": profile.get("grade", "Class 10"),
+                "location": location,
+                "city": location,
+                "interests": [i.strip() for i in student_signals.split(",") if i.strip()],
+            }
+            recs = recommender.recommend_field_pathways(field_interest, student_profile, ai_client=ai_client)
+
+        if not recs:
+            st.warning("No pathway recommendation found. Try a different field or check your AI settings.")
+        else:
+            for idx, r in enumerate(recs):
+                with st.expander(f"Pathway: {r.get('field', field_interest)}", expanded=(idx==0)):
+                    st.markdown(f"### 📝 Summary\n{r.get('summary', '')}")
+                    
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        st.markdown("#### 📚 Class 11 Guidance")
+                        st.write(r.get("class_11", {}).get("decision", "Consult your school counselor."))
+                        if r.get("class_11", {}).get("subjects"):
+                            st.write("**Subjects:** " + ", ".join(r["class_11"]["subjects"]))
+                    with c2:
+                        st.markdown("#### 🎯 Class 12 & Beyond")
+                        for item in r.get("class_12", {}).get("what_to_do", []):
+                            st.write(f"- {item}")
+
+                    st.markdown("#### 💼 Career Outlook")
+                    for career in r.get("career_outlook", []):
+                        st.write(f"**{career.get('role')}**: {career.get('salary')}")
+
+
 def main():
     _init_state()
     ai_client, provider = _build_ai_client()
@@ -756,11 +828,12 @@ def main():
         st.progress(min(max(stats["progress"], 0), 100) / 100)
         st.caption(f"Progress: {stats['progress']}%")
 
+        nav_options = ["Dashboard", "Learning Path", "Academic Plan", "Academic Pathways", "Practice Lab", "Appointments", "Analytics"]
         nav = st.radio(
             "Go to",
-            ["Dashboard", "Learning Path", "Academic Plan", "Practice Lab", "Appointments", "Analytics"],
-            index=["Dashboard", "Learning Path", "Academic Plan", "Practice Lab", "Appointments", "Analytics"].index(st.session_state.maths_nav)
-            if st.session_state.maths_nav in ["Dashboard", "Learning Path", "Academic Plan", "Practice Lab", "Appointments", "Analytics"]
+            nav_options,
+            index=nav_options.index(st.session_state.maths_nav)
+            if st.session_state.maths_nav in nav_options
             else 0,
         )
         st.session_state.maths_nav = nav
@@ -772,9 +845,9 @@ def main():
 
     st.markdown("<div class='bm-eyebrow'>Archive Tutor inspired · Basic Maths Prep</div>", unsafe_allow_html=True)
 
-    # Variant preview modal: allow review before attempting
+    # Variant preview
     if st.session_state.get("maths_show_preview") and st.session_state.get("maths_variant_preview"):
-        with st.modal("Review variant questions"):
+        with st.expander("Review variant questions", expanded=True):
             pv = st.session_state.get("maths_variant_preview") or []
             st.markdown(f"<div class='bm-eyebrow'>Preview {len(pv)} variant questions</div>", unsafe_allow_html=True)
             for idx, q in enumerate(pv):
@@ -791,18 +864,18 @@ def main():
                 except Exception:
                     pass
                 st.session_state.maths_show_preview = False
-                st.experimental_rerun()
+                st.rerun()
             if discard:
                 try:
                     del st.session_state["maths_variant_preview"]
                 except Exception:
                     pass
                 st.session_state.maths_show_preview = False
-                st.experimental_rerun()
+                st.rerun()
 
-    # If a quick-practice modal was requested, show it here (keeps user on same page)
+    # If a quick-practice expander was requested, show it here
     if st.session_state.get("maths_show_modal") and st.session_state.get("maths_modal_questions"):
-        with st.modal("Quick practice"):
+        with st.expander("Quick practice", expanded=True):
             mq = st.session_state.get("maths_modal_questions") or []
             with st.form("modal_practice_form"):
                 st.markdown(f"<div class='bm-eyebrow'>Quick practice: {len(mq)} questions</div>", unsafe_allow_html=True)
@@ -909,6 +982,9 @@ def main():
         _render_week_plan(profile)
         st.markdown("<div class='bm-divider'></div>", unsafe_allow_html=True)
         _render_revision_timeline(profile)
+
+    elif nav == "Academic Pathways":
+        _render_pathways(profile, ai_client)
 
     elif nav == "Practice Lab":
         _render_practice_lab(profile, ai_client, provider)

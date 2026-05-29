@@ -107,6 +107,72 @@ class AIClient:
         text = messages[-1]["content"] if isinstance(messages, list) and messages else str(messages)
         return self._mock_reply(text)
 
+    def stream_message(self, messages):
+        """Generator that streams response parts from the AI provider.
+
+        Falls back to send_message (non-streaming) if the provider or client doesn't support it.
+        """
+        if self.provider.lower() == "openai" and self.client is not None:
+            try:
+                stream = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    stream=True
+                )
+                for chunk in stream:
+                    if chunk.choices and chunk.choices[0].delta.content:
+                        yield chunk.choices[0].delta.content
+                return
+            except Exception:
+                yield self.send_message(messages)
+                return
+
+        if self.provider.lower() == "google":
+            api_key = self.api_key or os.environ.get("GOOGLE_API_KEY")
+            if not api_key:
+                yield self.send_message(messages)
+                return
+
+            model_candidates = self._google_candidate_models(api_key, self.model)
+            if not model_candidates:
+                yield self.send_message(messages)
+                return
+
+            model_name = model_candidates[0]
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:streamGenerateContent?alt=sse&key={api_key}"
+            payload = {
+                "systemInstruction": {
+                    "parts": [{"text": "You are a helpful academic advisor for students. Use the conversation context when answering follow-up questions."}]
+                },
+                "contents": self._google_build_contents(messages),
+                "generationConfig": {"temperature": 0.2, "maxOutputTokens": 2048},
+            }
+
+            try:
+                # Use requests with stream=True for SSE
+                with requests.post(url, json=payload, timeout=20, stream=True) as resp:
+                    if resp.status_code != 200:
+                        yield self.send_message(messages)
+                        return
+                    for line in resp.iter_lines():
+                        if line:
+                            decoded = line.decode('utf-8')
+                            if decoded.startswith('data: '):
+                                try:
+                                    chunk_json = json.loads(decoded[6:])
+                                    text, _ = self._google_extract_text_and_finish(chunk_json)
+                                    if text:
+                                        yield text
+                                except Exception:
+                                    continue
+                return
+            except Exception:
+                yield self.send_message(messages)
+                return
+
+        # Fallback for mock and others
+        yield self.send_message(messages)
+
     def _mock_reply(self, text):
         # Very small rule-based fallback for offline testing
         text = (text or "").lower()

@@ -3,6 +3,10 @@
 All notable changes to this project are documented in this file.
 
 ## [Unreleased]
+- **AI Flow Migration**: Transformed app into a full SHAPERS Academic Advisor with multi-turn conversation support and integrated pathway/career guidance.
+- **Streaming UI**: Added real-time response streaming for OpenAI and Google Gemini providers for a superior UX.
+- **Workflow Optimization**: Consolidated GitHub Actions, fixed cross-platform script issues, and added automated provider health checks with issue reporting.
+- **UI Refinement**: Modernized navigation and replaced deprecated Streamlit calls for better stability.
 - Harden Interaction Trends with mixed-format timestamp parsing, daily interaction totals, and average sentiment trend charts.
 - Harden pathway recommendations by merging AI output into canonical KB pathways so Admin always gets complete class 11/12 and city-specific details.
 - Fix Streamlit deployment imports by using absolute `app.*` imports and adding a startup path guard in `app/streamlit_app.py`.

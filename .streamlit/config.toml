@@ -1,6 +1,6 @@
 [server]
 headless = true
-enableCORS = false
+port = 8501
 
 [theme]
 primaryColor = "#0f6b6a"
@@ -8,16 +8,3 @@ backgroundColor = "#f7fbfc"
 secondaryBackgroundColor = "#ffffff"
 textColor = "#0b2545"
 font = "sans serif"
-
-[global]
-unit = "metric"
-[server]
-headless = true
-enableCORS = false
-port = 8501
-
-[theme]
-primaryColor = "#0b8966"
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f0f2f6"
-textColor = "#262730"

@@ -40,7 +40,9 @@ def test_generate_math_reply_includes_profile_context_without_ai_client():
         "weak_topics": ["algebra-foundations"],
     }
 
-    reply = basic_maths.generate_math_reply("What should I revise next for maths?", profile, ai_client=None)
+    # The new signature requires a list of message dicts
+    messages = [{"role": "user", "content": "What should I revise next for maths?"}]
+    reply = basic_maths.generate_math_reply(messages, profile, ai_client=None)
 
     assert "Class 10" in reply
     assert "Aanya" in reply or "Pune" in reply

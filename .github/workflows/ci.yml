@@ -2,70 +2,59 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
-
-jobs:
-  tests:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.11]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: Run tests
-        run: |
-          pytest -q
-name: CI
-
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
   schedule:
-    - cron: '0 0 * * *'  # daily at 00:00 UTC
+    - cron: '0 0 * * *'  # Daily at midnight UTC
   workflow_dispatch: {}
 
 jobs:
   test:
+    name: Unit Tests
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11']
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install pytest
+          pip install pytest pytest-mock pytest-cov
 
-      - name: Run tests
-        run: pytest -q
+      - name: Run tests with coverage
+        run: |
+          export PYTHONPATH=$PYTHONPATH:.
+          pytest --cov=app tests/ --cov-report=xml
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4
+        if: success()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   health-check:
+    name: Provider Health Check
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
       - name: Install dependencies
         run: |
@@ -75,8 +64,6 @@ jobs:
       - name: Run provider health checks
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-          DIALOGFLOW_PROJECT_ID: ${{ secrets.DIALOGFLOW_PROJECT_ID }}
-          DIALOGFLOW_ACCESS_TOKEN: ${{ secrets.DIALOGFLOW_ACCESS_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           python scripts/run_health_checks.py
@@ -89,40 +76,39 @@ jobs:
           import os
           from pathlib import Path
 
-          results = json.loads(Path('health_results.json').read_text(encoding='utf-8'))
+          results_file = Path('health_results.json')
+          if not results_file.exists():
+              print("No health results found.")
+              exit(0)
+          
+          results = json.loads(results_file.read_text(encoding='utf-8'))
           failing = {name: info for name, info in results.items() if not info.get('ok', False)}
-          out = Path(os.environ['GITHUB_OUTPUT'])
-          out.write_text(
-              f"results={json.dumps(results)}\n"
-              f"has_failures={'true' if failing else 'false'}\n"
-              f"failing={json.dumps(failing)}\n",
-              encoding='utf-8'
-          )
-          print(json.dumps(results, indent=2))
+          
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"results={json.dumps(results)}\n")
+              f.write(f"has_failures={'true' if failing else 'false'}\n")
           PY
 
       - name: Create issue for failing providers
         if: steps.read_results.outputs.has_failures == 'true'
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const results = JSON.parse(process.env.RESULTS || '{}');
             const failing = Object.entries(results).filter(([, v]) => v && v.ok === false);
-            if (failing.length === 0) {
-              console.log('All providers healthy');
-              return;
-            }
-            const bodyLines = ['The scheduled provider health check detected failures:',''];
+            if (failing.length === 0) return;
+
+            const bodyLines = ['### 🚨 Provider Health Check Failures','', 'The scheduled health check detected the following issues:', ''];
             for (const [name, info] of failing) {
-              bodyLines.push(`- **${name}**: ${JSON.stringify(info)}`);
+              bodyLines.push(`- **${name}**: ${info.reason || 'Unknown error'} ${info.detail ? `(\`${info.detail}\`)` : ''}`);
             }
-            const issue = await github.rest.issues.create({
+            bodyLines.push('', '---', '_Generated by GitHub Actions_');
+
+            await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `Health check failures: ${failing.map(f=>f[0]).join(', ')}`,
+              title: `⚠️ Provider Health Check Failures: ${failing.map(f=>f[0]).join(', ')}`,
               body: bodyLines.join('\n')
             });
-            console.log('Created issue', issue.data.html_url);
         env:
           RESULTS: ${{ steps.read_results.outputs.results }}
